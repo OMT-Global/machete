@@ -1,7 +1,7 @@
 version: 1
 project:
-  name: mac-setup
-  description: Brewfile and shell scripts for reproducible macOS environment provisioning
+  name: machete
+  description: Swiss army knife for macOS setup and maintenance
   visibility: private
   owner: OMT-Global
   defaultBranch: main
@@ -25,7 +25,7 @@ repo:
 archetype:
   kind: generic-empty
   packageManager: npm
-  moduleName: mac_setup
+  moduleName: machete
 github:
   createRepo: false
   reviewers:

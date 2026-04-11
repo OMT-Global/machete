@@ -1,0 +1,30 @@
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[user]
+	name = johnmteneyckjr
+	email = john.m.teneyck@gmail.com
+[credential]
+	helper = osxkeychain
+[gpg "x509"]
+	program = /opt/homebrew/bin/gitsign
+[gpg]
+	format = x509
+[commit]
+	gpgsign = true
+[tag]
+	gpgsign = true
+[gitsign]
+	connectorID = https://github.com/login/oauth
+[init]
+	defaultBranch = main
+[core]
+	excludesfile = /Users/johnteneyckjr./.config/git/ignore
+[credential "https://github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/opt/homebrew/bin/gh auth git-credential
