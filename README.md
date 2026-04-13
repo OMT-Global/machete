@@ -11,6 +11,7 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ./machete snapshot   Export current state to repo: Brewfile, dotfiles, defaults template
 ./machete update     Upgrade all Homebrew packages and clean up
 ./machete doctor     Check what's installed, symlinked, and in sync with the repo
+./machete diff       Compare tracked dotfiles and Brewfile against the current machine
 ./machete sync       Pull latest repo changes and re-apply setup (idempotent)
 ./machete defaults   Apply macOS system preferences from defaults/macos-defaults.sh
 ```
@@ -53,6 +54,7 @@ cd machete
 
 ```bash
 ./machete doctor     # see what's drifted
+./machete diff       # compare live state before snapshotting
 ./machete update     # upgrade all packages
 ./machete sync       # pull latest + re-apply
 ```
@@ -76,6 +78,7 @@ machete/
     snapshot.sh            # internals for ./machete snapshot
     update.sh              # internals for ./machete update
     doctor.sh              # internals for ./machete doctor
+    diff.sh                # internals for ./machete diff
     sync.sh                # internals for ./machete sync
 ```
 
