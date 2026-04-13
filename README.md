@@ -1,10 +1,10 @@
-# machete
+# machete 🛠️
 
 Swiss army knife for macOS setup and maintenance.
 
 Snapshot your current Mac into Git, restore it on a new machine in one command, and keep everything in sync over time.
 
-## Commands
+## Commands ⚡
 
 ```
 ./machete setup      Bootstrap a new Mac: Xcode tools, Homebrew, packages, dotfiles, defaults
@@ -15,7 +15,7 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ./machete defaults   Apply macOS system preferences from defaults/macos-defaults.sh
 ```
 
-## How It Works
+## How It Works 🧭
 
 ```
 Current Mac                   Git Repository              New Mac
@@ -29,7 +29,7 @@ Current Mac                   Git Repository              New Mac
                                                          └──────────────────────┘
 ```
 
-## Quick Start
+## Quick Start 🚀
 
 ### On your current Mac (first time)
 
@@ -57,7 +57,7 @@ cd machete
 ./machete sync       # pull latest + re-apply
 ```
 
-## File Structure
+## File Structure 📁
 
 ```
 machete/
@@ -79,7 +79,7 @@ machete/
     sync.sh                # internals for ./machete sync
 ```
 
-## Dotfiles
+## Dotfiles ✍️
 
 Files in `dotfiles/` are **symlinked** (not copied) into `$HOME` by `./machete setup`. This means:
 - Editing `~/.zshrc` edits the repo file directly
@@ -88,7 +88,7 @@ Files in `dotfiles/` are **symlinked** (not copied) into `$HOME` by `./machete s
 
 To add a new dotfile, copy it into `dotfiles/` and run `./machete setup` to create the symlink.
 
-## macOS Defaults
+## macOS Defaults 🎛️
 
 `defaults/macos-defaults.sh` is generated on first `./machete snapshot` with sensible starting defaults:
 - Fast key repeat
@@ -98,13 +98,13 @@ To add a new dotfile, copy it into `dotfiles/` and run `./machete setup` to crea
 
 Edit it freely and re-run `./machete defaults` to apply changes.
 
-## Requirements
+## Requirements ✅
 
 - macOS (Intel or Apple Silicon)
 - Git
 - Internet connection (for Homebrew)
 
-## Troubleshooting
+## Troubleshooting 🧰
 
 - **Homebrew not found after install**: ensure `/opt/homebrew/bin` (Apple Silicon) or `/usr/local/bin` (Intel) is in your `PATH`
 - **Permission denied**: `chmod +x machete`
