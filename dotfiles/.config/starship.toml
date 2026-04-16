@@ -1,0 +1,32 @@
+format = """
+[╭─](bold blue)$username in $directory at $time$fill$cmd_duration
+[╰─➜](bold blue) """
+
+[username]
+show_always = true
+style_user = "bold cyan"
+format = "[$user]($style)"
+
+[directory]
+style = "bold purple"
+truncation_length = 3
+format = "[$path]($style)"
+home_symbol = "computerland"
+
+[time]
+disabled = false
+style = "bold yellow"
+format = "[$time]($style)"
+time_format = "%I:%M %p"
+
+[fill]
+symbol = " "
+
+[cmd_duration]
+min_time = 0
+style = "bold dimmed white"
+format = "took [$duration]($style)"
+
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[➜](bold red)"

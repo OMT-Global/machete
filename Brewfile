@@ -42,6 +42,8 @@ brew "git-lfs"
 brew "gitsign"
 # Render markdown on the CLI
 brew "glow"
+# System monitor
+brew "glances"
 # Kubernetes package manager
 brew "helm"
 # User-friendly cURL replacement (command-line HTTP client)
@@ -56,12 +58,18 @@ brew "k3d"
 brew "kind"
 # Template-free customization of Kubernetes YAML manifests
 brew "kustomize"
+# Simple terminal UI for git commands
+brew "lazygit"
 # NCurses Disk Usage
 brew "ncdu"
+# Open-source, cross-platform JavaScript runtime
+brew "node"
 # Oracle Cloud Infrastructure CLI
 brew "oci-cli"
 # Your own personal AI assistant
 brew "openclaw-cli"
+# JavaScript package manager
+brew "pnpm"
 # Execute binaries from Python packages in isolated environments
 brew "pipx"
 # Tool for managing OCI containers and pods
@@ -74,8 +82,12 @@ brew "python@3.12"
 brew "ripgrep"
 # Utility that provides fast incremental file transfer
 brew "rsync"
+# Safe, fast systems programming language
+brew "rust"
 # Non-interactive SSH password auth
 brew "sshpass"
+# Cross-shell prompt
+brew "starship"
 # Manipulate and query tags on macOS files
 brew "tag"
 # Tool to build, change, and version infrastructure
@@ -84,10 +96,14 @@ brew "terraform"
 brew "tesseract"
 # Terraform version manager inspired by rbenv
 brew "tfenv", link: false
+# Simplified and community-driven man pages
+brew "tlrc"
 # Terminal multiplexer
 brew "tmux"
 # Display directories as trees (with optional color/HTML output)
 brew "tree"
+# Command-line interface for Vercel
+brew "vercel-cli"
 # Generate your Xcode project from a spec file and your folder structure
 brew "xcodegen"
 # Best command-line tool to install and switch between multiple versions of Xcode
@@ -96,6 +112,8 @@ brew "xcodes"
 brew "ykman"
 # Shell extension to navigate your filesystem faster
 brew "zoxide"
+# Developer font with icons
+cask "font-jetbrains-mono-nerd-font"
 # Distribution of the Python and R programming languages for scientific computing
 cask "anaconda"
 # Terminal-based AI coding assistant
