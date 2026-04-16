@@ -39,29 +39,3 @@ alias brewup='macsetup_refresh'
 
 export BUN_INSTALL="$HOME/.bun"
 export PATH="$BUN_INSTALL/bin:$PATH"
-
-# Load common API tokens from the macOS keychain when present.
-if [[ -z "$FIGMA_ACCESS_TOKEN" ]]; then
-  if figma_token="$(security find-generic-password -a "$USER" -s "FIGMA_ACCESS_TOKEN" -w 2>/dev/null)"; then
-    export FIGMA_ACCESS_TOKEN="$figma_token"
-  else
-    echo "warning: FIGMA_ACCESS_TOKEN not found in keychain" >&2
-  fi
-  unset figma_token
-fi
-if [[ -z "$GITHUB_TOKEN" ]]; then
-  if github_token="$(security find-generic-password -a "$USER" -s "GITHUB_TOKEN" -w 2>/dev/null)"; then
-    export GITHUB_TOKEN="$github_token"
-  else
-    echo "warning: GITHUB_TOKEN not found in keychain" >&2
-  fi
-  unset github_token
-fi
-if [[ -z "$CONTEXT7_API_KEY" ]]; then
-  if context7_api_key="$(security find-generic-password -a "$USER" -s "CONTEXT7_API_KEY" -w 2>/dev/null)"; then
-    export CONTEXT7_API_KEY="$context7_api_key"
-  else
-    echo "warning: CONTEXT7_API_KEY not found in keychain" >&2
-  fi
-  unset context7_api_key
-fi

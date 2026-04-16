@@ -4,8 +4,8 @@
 	process = git-lfs filter-process
 	required = true
 [user]
-	name = johnmteneyckjr
-	email = john.m.teneyck@gmail.com
+	name = Your Name
+	email = you@example.com
 [credential]
 	helper = osxkeychain
 [gpg "x509"]
