@@ -91,6 +91,8 @@ Files in `dotfiles/` are **symlinked** (not copied) into `$HOME` by `./machete s
 
 To add a new dotfile, copy it into `dotfiles/` and run `./machete setup` to create the symlink.
 
+Before publishing or sharing a machete repo, template personal identity fields in dotfiles such as `.gitconfig` and remove shell snippets that load local API tokens from the keychain or environment.
+
 ## macOS Defaults 🎛️
 
 `defaults/macos-defaults.sh` is generated on first `./machete snapshot` with sensible starting defaults:
@@ -112,6 +114,10 @@ Edit it freely and re-run `./machete defaults` to apply changes.
 - **Homebrew not found after install**: ensure `/opt/homebrew/bin` (Apple Silicon) or `/usr/local/bin` (Intel) is in your `PATH`
 - **Permission denied**: `chmod +x machete`
 - **Symlink conflicts**: `./machete setup` backs up existing files to `<file>.bak` before symlinking
+
+## Privacy
+
+Do not commit private keys, SSH configs, auth files, shell history, session state, cache directories, local Claude/Codex worktrees, or files that contain tokens, passwords, cookies, or machine-local secrets. Keep local tool state such as `.claude/` and `.codex/` out of the repo unless you have separated a small, portable scaffold from generated runtime data.
 
 ## License
 
