@@ -41,6 +41,7 @@ Current Mac                   Git Repository              New Mac
 git clone https://github.com/your-org/machete.git
 cd machete
 ./machete snapshot          # captures Brewfile, global packages, dotfiles, creates defaults template
+./machete snapshot --with-extensions  # also captures VS Code-compatible editor extensions
 vim defaults/macos-defaults.sh  # customize your system preferences
 git add . && git commit -m "snapshot: $(date +%Y-%m-%d)" && git push
 ```
@@ -73,6 +74,7 @@ machete/
     npm-global.txt
     pip-global.txt
     cargo-global.txt
+    vscode-extensions.txt  # VS Code-compatible editor extensions (opt-in snapshot)
   dotfiles/                # your dotfiles, symlinked to $HOME by setup
     .zshrc
     .zprofile
@@ -128,6 +130,11 @@ Edit it freely and re-run `./machete defaults` to apply changes.
 `./machete setup` starts each saved service after installing packages, and `./machete services` can re-run that step by itself.
 
 If a saved service is not installed, machete prints a warning and skips it. `./machete doctor` reports saved services that are missing or not running.
+
+## Editor Extensions
+
+`./machete snapshot --with-extensions` writes extensions from the first available VS Code-compatible CLI (`code`, `cursor`, or `codium`) to `packages/vscode-extensions.txt`.
+When that file exists, `./machete setup` installs each saved extension with the first available editor CLI. If no supported editor CLI is installed, setup prints a warning and continues. `./machete doctor` reports extension drift only when `packages/vscode-extensions.txt` exists.
 
 ## Requirements ✅
 
