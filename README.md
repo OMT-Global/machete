@@ -15,6 +15,8 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ./machete diff       Compare tracked dotfiles and Brewfile against the current machine
 ./machete sync       Pull latest repo changes and re-apply setup (idempotent)
 ./machete defaults   Apply macOS system preferences from defaults/macos-defaults.sh
+./machete defaults --init
+                    Create defaults/macos-defaults.sh with an interactive preset picker
 ```
 
 ## How It Works 🧭
@@ -100,11 +102,13 @@ Before publishing or sharing a machete repo, template personal identity fields i
 
 ## macOS Defaults 🎛️
 
-`defaults/macos-defaults.sh` is generated on first `./machete snapshot` with sensible starting defaults:
-- Fast key repeat
-- Finder: show extensions, hidden files, path bar
-- Dock: auto-hide, no recent apps
-- Screenshots: no shadow, save to Desktop
+`defaults/macos-defaults.sh` is generated on first `./machete snapshot`, or any time with `./machete defaults --init`.
+The preset picker offers:
+- `minimal`: conservative Finder, dialog, and screenshot defaults
+- `developer`: minimal defaults plus fast keyboard, power-user Finder, Dock, and Activity Monitor settings
+- `privacy`: minimal defaults plus reduced ad personalization and web search leakage
+
+After choosing a base preset, answer yes/no prompts to layer individual settings. In non-interactive runs such as `CI=true`, machete skips prompts and writes the safe `minimal` preset.
 
 Edit it freely and re-run `./machete defaults` to apply changes.
 

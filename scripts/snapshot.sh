@@ -5,6 +5,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
 source "${REPO_DIR}/scripts/lib/brewfile.sh"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
+source "${REPO_DIR}/scripts/lib/macos-defaults.sh"
 
 echo "==> Exporting Homebrew packages to Brewfile"
 if command -v brew >/dev/null 2>&1; then
@@ -37,57 +38,8 @@ done
 echo "==> Ensuring defaults/macos-defaults.sh exists"
 DEFAULTS_SCRIPT="${REPO_DIR}/defaults/macos-defaults.sh"
 if [[ ! -f "${DEFAULTS_SCRIPT}" ]]; then
-  echo "  - Creating template (edit to add your preferences)"
-  mkdir -p "${REPO_DIR}/defaults"
-  cat > "${DEFAULTS_SCRIPT}" <<'DEFAULTS'
-#!/usr/bin/env bash
-set -euo pipefail
-
-# macOS system preferences.
-# Run via: ./machete defaults
-
-# --- Keyboard ---
-# Enable key repeat instead of press-and-hold character picker
-defaults write -g ApplePressAndHoldEnabled -bool false
-# Fast key repeat (lower = faster; 2 is very fast)
-defaults write NSGlobalDomain KeyRepeat -int 2
-defaults write NSGlobalDomain InitialKeyRepeat -int 15
-
-# --- Dialogs ---
-defaults write -g NSNavPanelExpandedStateForSaveMode -bool true
-defaults write -g NSNavPanelExpandedStateForSaveMode2 -bool true
-defaults write -g PMPrintingExpandedStateForPrint -bool true
-defaults write -g PMPrintingExpandedStateForPrint2 -bool true
-
-# --- Finder ---
-defaults write NSGlobalDomain AppleShowAllExtensions -bool true
-defaults write com.apple.finder AppleShowAllFiles -bool true
-defaults write com.apple.finder ShowPathbar -bool true
-defaults write com.apple.finder ShowStatusBar -bool true
-# Default to list view
-defaults write com.apple.finder FXPreferredViewStyle -string "Nlsv"
-# No warning when changing file extension
-defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false
-
-# --- Dock ---
-defaults write com.apple.dock autohide -bool true
-defaults write com.apple.dock autohide-delay -float 0
-defaults write com.apple.dock show-recents -bool false
-
-# --- Screenshots ---
-defaults write com.apple.screencapture location -string "${HOME}/Desktop"
-defaults write com.apple.screencapture type -string "png"
-defaults write com.apple.screencapture disable-shadow -bool true
-
-# --- Activity Monitor ---
-defaults write com.apple.ActivityMonitor OpenMainWindow -bool true
-defaults write com.apple.ActivityMonitor ShowCategory -int 0
-
-# --- Apply ---
-killall Dock Finder SystemUIServer 2>/dev/null || true
-echo "  - macOS defaults applied"
-DEFAULTS
-  chmod +x "${DEFAULTS_SCRIPT}"
+  echo "  - Creating defaults preset"
+  macos_defaults_init "${DEFAULTS_SCRIPT}"
 else
   echo "  - defaults/macos-defaults.sh already exists; not overwriting."
 fi
