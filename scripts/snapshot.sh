@@ -4,11 +4,19 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
 source "${REPO_DIR}/scripts/lib/brewfile.sh"
+source "${REPO_DIR}/scripts/lib/brew-services.sh"
 
 echo "==> Exporting Homebrew packages to Brewfile"
 if command -v brew >/dev/null 2>&1; then
   brewfile_dump_filtered "${REPO_DIR}/Brewfile"
   echo "  - Brewfile updated with portable filters"
+
+  echo "==> Exporting Homebrew services to defaults/brew-services.txt"
+  if brew_services_snapshot "$(brew_services_state_file)"; then
+    echo "  - Homebrew services updated"
+  else
+    echo "  - brew services list failed; skipping services export."
+  fi
 else
   echo "  - Homebrew not found; skipping Brewfile export."
 fi

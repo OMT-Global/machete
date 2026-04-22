@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
+source "${REPO_DIR}/scripts/lib/brew-services.sh"
 
 EXIT_CODE=0
 
@@ -48,6 +49,29 @@ if command -v brew >/dev/null 2>&1; then
   fi
 else
   warn "Homebrew not found"
+fi
+
+# --- Homebrew services ---
+header "Homebrew services"
+BREW_SERVICES_FILE="$(brew_services_state_file)"
+if [[ ! -f "${BREW_SERVICES_FILE}" ]]; then
+  info "No defaults/brew-services.txt — run: ./machete snapshot"
+elif ! command -v brew >/dev/null 2>&1; then
+  warn "Homebrew not found; cannot check saved services"
+else
+  FOUND_SERVICE=0
+  while IFS=$'\t' read -r service_state service_name; do
+    FOUND_SERVICE=1
+    case "${service_state}" in
+      missing) warn "${service_name}: saved but not installed — run: ./machete setup" ;;
+      running) ok "${service_name}: running" ;;
+      stopped) warn "${service_name}: saved but not running — run: ./machete services" ;;
+    esac
+  done < <(brew_services_saved_service_states "${BREW_SERVICES_FILE}")
+
+  if [[ "${FOUND_SERVICE}" -eq 0 ]]; then
+    info "No saved Homebrew services"
+  fi
 fi
 
 # --- Dotfiles ---

@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
+source "${REPO_DIR}/scripts/lib/brew-services.sh"
 
 find_brew_bin() {
   if command -v brew >/dev/null 2>&1; then
@@ -73,6 +74,9 @@ if [[ -d "${DOTFILES_DIR}" ]]; then
 else
   echo "No dotfiles/ directory found; skipping symlinks."
 fi
+
+echo "==> Restoring Homebrew services"
+brew_services_restore "$(brew_services_state_file)"
 
 echo "==> Applying macOS defaults"
 DEFAULTS_SCRIPT="${REPO_DIR}/defaults/macos-defaults.sh"

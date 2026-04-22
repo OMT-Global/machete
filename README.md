@@ -7,8 +7,9 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ## Commands ⚡
 
 ```
-./machete setup      Bootstrap a new Mac: Xcode tools, Homebrew, packages, dotfiles, defaults
-./machete snapshot   Export current state to repo: Brewfile, dotfiles, defaults template
+./machete setup      Bootstrap a new Mac: Xcode tools, Homebrew, packages, services, dotfiles, defaults
+./machete snapshot   Export current state to repo: Brewfile, services, dotfiles, defaults template
+./machete services   Start Homebrew services listed in defaults/brew-services.txt
 ./machete update     Upgrade all Homebrew packages and clean up
 ./machete doctor     Check what's installed, symlinked, and in sync with the repo
 ./machete diff       Compare tracked dotfiles and Brewfile against the current machine
@@ -24,7 +25,8 @@ Current Mac                   Git Repository              New Mac
 │ ./machete snapshot   │ ───► │ Brewfile         │ ───► │ ./machete setup      │
 │  - brew bundle dump  │      │ dotfiles/        │      │  - Xcode CLI tools   │
 │  - copy dotfiles     │      │ defaults/        │      │  - Homebrew          │
-│  - defaults template │      │   macos-defaults │      │  - brew bundle       │
+│  - brew services     │      │   macos-defaults │      │  - brew bundle       │
+│  - defaults template │      │   brew-services  │      │  - brew services     │
 └──────────────────────┘      └──────────────────┘      │  - symlink dotfiles  │
                                                          │  - apply defaults    │
                                                          └──────────────────────┘
@@ -55,6 +57,7 @@ cd machete
 ```bash
 ./machete doctor     # see what's drifted
 ./machete diff       # compare live state before snapshotting
+./machete services   # start saved Homebrew services
 ./machete update     # upgrade all packages
 ./machete sync       # pull latest + re-apply
 ```
@@ -73,9 +76,11 @@ machete/
     ...
   defaults/
     macos-defaults.sh      # system preferences (generated on first snapshot)
+    brew-services.txt      # Homebrew services to start during setup
   scripts/
     setup.sh               # internals for ./machete setup
     snapshot.sh            # internals for ./machete snapshot
+    services.sh            # internals for ./machete services
     update.sh              # internals for ./machete update
     doctor.sh              # internals for ./machete doctor
     diff.sh                # internals for ./machete diff
@@ -102,6 +107,13 @@ Before publishing or sharing a machete repo, template personal identity fields i
 - Screenshots: no shadow, save to Desktop
 
 Edit it freely and re-run `./machete defaults` to apply changes.
+
+## Homebrew Services
+
+`./machete snapshot` writes currently running Homebrew services to `defaults/brew-services.txt`.
+`./machete setup` starts each saved service after installing packages, and `./machete services` can re-run that step by itself.
+
+If a saved service is not installed, machete prints a warning and skips it. `./machete doctor` reports saved services that are missing or not running.
 
 ## Requirements ✅
 
