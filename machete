@@ -12,8 +12,9 @@ Usage:
   ./machete <command>
 
 Commands:
-  setup      Bootstrap a new Mac: Xcode tools, Homebrew, packages, dotfiles, defaults
-  snapshot   Export current state to repo: Brewfile, dotfiles, defaults template
+  setup      Bootstrap a new Mac: Xcode tools, Homebrew, packages, services, dotfiles, defaults
+  snapshot   Export current state to repo: Brewfile, services, dotfiles, defaults template
+  services   Start Homebrew services listed in defaults/brew-services.txt
   update     Upgrade all Homebrew packages and clean up
   doctor     Check what's installed, symlinked, and in sync with the repo
   diff       Compare tracked dotfiles and Brewfile against the current machine
@@ -25,6 +26,7 @@ Examples:
   ./machete doctor       # check current state
   ./machete diff         # compare live state before snapshotting
   ./machete snapshot     # capture what's on your Mac now
+  ./machete services     # restore saved Homebrew services
   ./machete update       # keep packages current
   ./machete sync         # pull + re-apply after a change
 
@@ -36,6 +38,7 @@ CMD="${1:-}"
 case "${CMD}" in
   setup)    exec "${SCRIPTS_DIR}/setup.sh" ;;
   snapshot) exec "${SCRIPTS_DIR}/snapshot.sh" ;;
+  services) exec "${SCRIPTS_DIR}/services.sh" ;;
   update)   exec "${SCRIPTS_DIR}/update.sh" ;;
   doctor)   exec "${SCRIPTS_DIR}/doctor.sh" ;;
   diff)     exec "${SCRIPTS_DIR}/diff.sh" ;;
