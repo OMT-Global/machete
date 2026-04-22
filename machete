@@ -34,19 +34,22 @@ EOF
 }
 
 CMD="${1:-}"
+if [[ $# -gt 0 ]]; then
+  shift
+fi
 
 case "${CMD}" in
-  setup)    exec "${SCRIPTS_DIR}/setup.sh" ;;
-  snapshot) exec "${SCRIPTS_DIR}/snapshot.sh" ;;
-  services) exec "${SCRIPTS_DIR}/services.sh" ;;
-  update)   exec "${SCRIPTS_DIR}/update.sh" ;;
-  doctor)   exec "${SCRIPTS_DIR}/doctor.sh" ;;
-  diff)     exec "${SCRIPTS_DIR}/diff.sh" ;;
-  sync)     exec "${SCRIPTS_DIR}/sync.sh" ;;
+  setup)    exec "${SCRIPTS_DIR}/setup.sh" "$@" ;;
+  snapshot) exec "${SCRIPTS_DIR}/snapshot.sh" "$@" ;;
+  services) exec "${SCRIPTS_DIR}/services.sh" "$@" ;;
+  update)   exec "${SCRIPTS_DIR}/update.sh" "$@" ;;
+  doctor)   exec "${SCRIPTS_DIR}/doctor.sh" "$@" ;;
+  diff)     exec "${SCRIPTS_DIR}/diff.sh" "$@" ;;
+  sync)     exec "${SCRIPTS_DIR}/sync.sh" "$@" ;;
   defaults)
     DEFAULTS_SCRIPT="${REPO_DIR}/defaults/macos-defaults.sh"
     if [[ -x "${DEFAULTS_SCRIPT}" ]]; then
-      exec "${DEFAULTS_SCRIPT}"
+      exec "${DEFAULTS_SCRIPT}" "$@"
     else
       echo "No defaults/macos-defaults.sh found. Run: ./machete snapshot"
       exit 1
