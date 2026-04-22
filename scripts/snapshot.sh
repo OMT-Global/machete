@@ -7,6 +7,7 @@ source "${REPO_DIR}/scripts/lib/brewfile.sh"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
 source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
+source "${REPO_DIR}/scripts/lib/snapshot-tags.sh"
 
 WITH_EXTENSIONS=0
 
@@ -38,8 +39,12 @@ while [[ $# -gt 0 ]]; do
       usage >&2
       exit 1
       ;;
-  esac
+    esac
 done
+
+echo "==> Creating rollback snapshot"
+SNAPSHOT_TAG="$(create_snapshot_tag "${REPO_DIR}" "snapshot")"
+echo "  - ${SNAPSHOT_TAG}"
 
 echo "==> Exporting Homebrew packages to Brewfile"
 if command -v brew >/dev/null 2>&1; then

@@ -10,6 +10,8 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ./machete setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
 ./machete snapshot   Export current state to repo: Brewfile, global packages, services, dotfiles, defaults template
 ./machete services   Start Homebrew services listed in defaults/brew-services.txt
+./machete history    List rollback snapshot tags, newest first
+./machete rollback   Restore the latest snapshot tag and re-apply setup
 ./machete update     Upgrade all Homebrew packages and clean up
 ./machete doctor     Check what's installed, symlinked, and in sync with the repo
 ./machete diff       Compare tracked dotfiles and Brewfile against the current machine
@@ -46,6 +48,8 @@ vim defaults/macos-defaults.sh  # customize your system preferences
 git add . && git commit -m "snapshot: $(date +%Y-%m-%d)" && git push
 ```
 
+`setup`, `snapshot`, and `sync` create rollback tags before they modify state. Tags are named `snapshot/YYYY-MM-DDTHH-MM-SS`.
+
 ### On a new Mac
 
 ```bash
@@ -62,6 +66,14 @@ cd machete
 ./machete services   # start saved Homebrew services
 ./machete update     # upgrade all packages
 ./machete sync       # pull latest + re-apply
+./machete history    # list rollback snapshots
+./machete rollback   # restore the newest snapshot and re-apply setup
+```
+
+To restore a specific snapshot, pass its tag:
+
+```bash
+./machete rollback snapshot/2026-04-22T09-30-00
 ```
 
 ## File Structure 📁
@@ -88,6 +100,8 @@ machete/
     setup.sh               # internals for ./machete setup
     snapshot.sh            # internals for ./machete snapshot
     services.sh            # internals for ./machete services
+    history.sh             # internals for ./machete history
+    rollback.sh            # internals for ./machete rollback
     update.sh              # internals for ./machete update
     doctor.sh              # internals for ./machete doctor
     diff.sh                # internals for ./machete diff

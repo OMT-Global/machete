@@ -16,6 +16,8 @@ Commands:
   snapshot   Export current state to repo: Brewfile, global packages, services, dotfiles, defaults template
              Use --with-extensions to also capture VS Code-compatible editor extensions
   services   Start Homebrew services listed in defaults/brew-services.txt
+  history    List rollback snapshot tags, newest first
+  rollback   Check out a snapshot tag and re-apply setup
   update     Upgrade all Homebrew packages and clean up
   doctor     Check what's installed, symlinked, and in sync with the repo
   diff       Compare tracked dotfiles and Brewfile against the current machine
@@ -29,6 +31,8 @@ Examples:
   ./machete snapshot     # capture what's on your Mac now
   ./machete snapshot --with-extensions
   ./machete services     # restore saved Homebrew services
+  ./machete history      # list rollback snapshots
+  ./machete rollback     # restore the latest snapshot
   ./machete update       # keep packages current
   ./machete sync         # pull + re-apply after a change
 
@@ -44,6 +48,8 @@ case "${CMD}" in
   setup)    exec "${SCRIPTS_DIR}/setup.sh" "$@" ;;
   snapshot) exec "${SCRIPTS_DIR}/snapshot.sh" "$@" ;;
   services) exec "${SCRIPTS_DIR}/services.sh" "$@" ;;
+  history)  exec "${SCRIPTS_DIR}/history.sh" "$@" ;;
+  rollback) exec "${SCRIPTS_DIR}/rollback.sh" "$@" ;;
   update)   exec "${SCRIPTS_DIR}/update.sh" "$@" ;;
   doctor)   exec "${SCRIPTS_DIR}/doctor.sh" "$@" ;;
   diff)     exec "${SCRIPTS_DIR}/diff.sh" "$@" ;;
