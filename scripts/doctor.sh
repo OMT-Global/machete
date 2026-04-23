@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
+source "${REPO_DIR}/scripts/lib/global-packages.sh"
 
 EXIT_CODE=0
 
@@ -72,6 +73,63 @@ else
   if [[ "${FOUND_SERVICE}" -eq 0 ]]; then
     info "No saved Homebrew services"
   fi
+fi
+
+# --- Global packages ---
+header "Global packages"
+
+NPM_FILE="$(npm_packages_file "${REPO_DIR}")"
+if [[ -f "${NPM_FILE}" ]]; then
+  if command -v npm >/dev/null 2>&1; then
+    if check_saved_vs_current "${NPM_FILE}" bash -lc "npm ls -g --depth=0 --parseable=true 2>/dev/null | awk -F/ 'NR>1 {print \\$NF}' | grep -v '^npm$' | LC_ALL=C sort -u"; then
+      ok "npm globals match snapshot"
+    else
+      warn "npm global package drift detected — run: ./machete snapshot or ./machete setup"
+    fi
+  else
+    warn "npm snapshot exists but npm is not installed"
+  fi
+else
+  info "No npm global snapshot yet — run: ./machete snapshot"
+fi
+
+PIP_FILE="$(pip_packages_file "${REPO_DIR}")"
+if [[ -f "${PIP_FILE}" ]]; then
+  if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1 || command -v python3 >/dev/null 2>&1 || command -v python >/dev/null 2>&1; then
+    if check_saved_vs_current "${PIP_FILE}" bash -lc '
+      if command -v pip3 >/dev/null 2>&1; then
+        pip3 list --user --format=freeze 2>/dev/null
+      elif command -v pip >/dev/null 2>&1; then
+        pip list --user --format=freeze 2>/dev/null
+      elif command -v python3 >/dev/null 2>&1; then
+        python3 -m pip list --user --format=freeze 2>/dev/null
+      else
+        python -m pip list --user --format=freeze 2>/dev/null
+      fi | sed "/^$/d" | LC_ALL=C sort -u'; then
+      ok "pip globals match snapshot"
+    else
+      warn "pip global package drift detected — run: ./machete snapshot or ./machete setup"
+    fi
+  else
+    warn "pip snapshot exists but pip is not installed"
+  fi
+else
+  info "No pip global snapshot yet — run: ./machete snapshot"
+fi
+
+CARGO_FILE="$(cargo_packages_file "${REPO_DIR}")"
+if [[ -f "${CARGO_FILE}" ]]; then
+  if command -v cargo >/dev/null 2>&1; then
+    if check_saved_vs_current "${CARGO_FILE}" bash -lc "cargo install --list 2>/dev/null | awk '/^[^ ]+ v[0-9]/ {version=substr(\\$2,2); sub(/:$/, \"\", version); print \\$1 \"@\" version}' | LC_ALL=C sort -u"; then
+      ok "cargo globals match snapshot"
+    else
+      warn "cargo global package drift detected — run: ./machete snapshot or ./machete setup"
+    fi
+  else
+    warn "cargo snapshot exists but cargo is not installed"
+  fi
+else
+  info "No cargo global snapshot yet — run: ./machete snapshot"
 fi
 
 # --- Dotfiles ---

@@ -5,6 +5,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
 source "${REPO_DIR}/scripts/lib/brewfile.sh"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
+source "${REPO_DIR}/scripts/lib/global-packages.sh"
 
 echo "==> Exporting Homebrew packages to Brewfile"
 if command -v brew >/dev/null 2>&1; then
@@ -20,6 +21,11 @@ if command -v brew >/dev/null 2>&1; then
 else
   echo "  - Homebrew not found; skipping Brewfile export."
 fi
+
+echo "==> Exporting global packages"
+snapshot_npm_globals "${REPO_DIR}"
+snapshot_pip_globals "${REPO_DIR}"
+snapshot_cargo_globals "${REPO_DIR}"
 
 echo "==> Copying dotfiles to ${DOTFILES_DIR}"
 mkdir -p "${DOTFILES_DIR}"
