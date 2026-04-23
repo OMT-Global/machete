@@ -33,6 +33,7 @@ write_list_file() {
         printf '%s\n' "${entry}"
       fi
     done
+    true
   } | LC_ALL=C sort -u > "${target}"
 }
 

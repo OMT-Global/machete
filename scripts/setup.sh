@@ -10,8 +10,11 @@ source "${REPO_DIR}/scripts/lib/snapshot-tags.sh"
 
 if [[ "${MACHETE_SKIP_SNAPSHOT_TAG:-0}" != "1" ]]; then
   echo "==> Creating rollback snapshot"
-  SNAPSHOT_TAG="$(create_snapshot_tag "${REPO_DIR}" "setup")"
-  echo "  - ${SNAPSHOT_TAG}"
+  if SNAPSHOT_TAG="$(create_snapshot_tag "${REPO_DIR}" "setup")"; then
+    echo "  - ${SNAPSHOT_TAG}"
+  else
+    echo "  - Not in a git worktree; skipping rollback snapshot."
+  fi
 fi
 
 find_brew_bin() {

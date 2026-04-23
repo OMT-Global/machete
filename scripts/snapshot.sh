@@ -43,8 +43,11 @@ while [[ $# -gt 0 ]]; do
 done
 
 echo "==> Creating rollback snapshot"
-SNAPSHOT_TAG="$(create_snapshot_tag "${REPO_DIR}" "snapshot")"
-echo "  - ${SNAPSHOT_TAG}"
+if SNAPSHOT_TAG="$(create_snapshot_tag "${REPO_DIR}" "snapshot")"; then
+  echo "  - ${SNAPSHOT_TAG}"
+else
+  echo "  - Not in a git worktree; skipping rollback snapshot."
+fi
 
 echo "==> Exporting Homebrew packages to Brewfile"
 if command -v brew >/dev/null 2>&1; then
