@@ -8,3 +8,4 @@ bash tests/ci-bats-fallback.sh
 run_bats_suite tests
 bash tests/homebrew-services.sh
 bash tests/global-packages.sh
+bash tests/editor-extensions.sh

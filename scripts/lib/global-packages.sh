@@ -29,7 +29,9 @@ write_list_file() {
   mkdir -p "$(dirname "${target}")"
   {
     for entry in "$@"; do
-      [[ -n "${entry}" ]] && printf '%s\n' "${entry}"
+      if [[ -n "${entry}" ]]; then
+        printf '%s\n' "${entry}"
+      fi
     done
   } | LC_ALL=C sort -u > "${target}"
 }
