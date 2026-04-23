@@ -21,6 +21,8 @@ Commands:
   diff       Compare tracked dotfiles and Brewfile against the current machine
   sync       Pull latest repo changes and re-apply setup (idempotent)
   defaults   Apply macOS system preferences from defaults/macos-defaults.sh
+  defaults --init
+             Create defaults/macos-defaults.sh with an interactive preset picker
 
 Examples:
   ./machete setup        # new machine
@@ -50,10 +52,15 @@ case "${CMD}" in
   sync)     exec "${SCRIPTS_DIR}/sync.sh" "$@" ;;
   defaults)
     DEFAULTS_SCRIPT="${REPO_DIR}/defaults/macos-defaults.sh"
-    if [[ -x "${DEFAULTS_SCRIPT}" ]]; then
+    if [[ "${1:-}" == "--init" ]]; then
+      shift
+      # shellcheck source=scripts/lib/macos-defaults.sh
+      source "${SCRIPTS_DIR}/lib/macos-defaults.sh"
+      macos_defaults_init "${DEFAULTS_SCRIPT}" "$@"
+    elif [[ -x "${DEFAULTS_SCRIPT}" ]]; then
       exec "${DEFAULTS_SCRIPT}" "$@"
     else
-      echo "No defaults/macos-defaults.sh found. Run: ./machete snapshot"
+      echo "No defaults/macos-defaults.sh found. Run: ./machete defaults --init"
       exit 1
     fi
     ;;
