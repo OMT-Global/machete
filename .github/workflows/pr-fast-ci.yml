@@ -2,7 +2,7 @@ name: PR Fast CI
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, edited]
 
 concurrency:
   group: pr-fast-${{ github.event.pull_request.number || github.ref }}
@@ -38,8 +38,12 @@ jobs:
               - 'CLAUDE.md'
               - '.devcontainer/**'
               - '.githooks/**'
+              - '.github/pull_request_template.md'
               - '.github/workflows/**'
+              - 'machete'
               - 'scripts/**'
+              - 'tests/**'
+              - 'Brewfile'
               - 'docs/bootstrap/**'
               - 'README.md'
               - 'docs/**'
@@ -49,8 +53,12 @@ jobs:
               - 'CLAUDE.md'
               - '.devcontainer/**'
               - '.githooks/**'
+              - '.github/pull_request_template.md'
               - '.github/workflows/**'
+              - 'machete'
               - 'scripts/**'
+              - 'tests/**'
+              - 'Brewfile'
               - 'docs/bootstrap/**'
               - '.env.example'
               - 'CODEOWNERS'
@@ -83,6 +91,21 @@ jobs:
       - name: Scan repository for secret patterns
         run: bash scripts/check-detect-secrets.sh --all-files
 
+  validate-pr-description:
+    name: Validate PR Description
+    runs-on: ['self-hosted', 'synology', 'shell-only', 'private']
+    timeout-minutes: 5
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Validate required PR template sections
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: printf '%s' "${PR_BODY:-}" | bash scripts/ci/validate-pr-body.sh -
+
   ci-gate:
     name: CI Gate
     runs-on: ['self-hosted', 'synology', 'shell-only', 'private']
@@ -91,6 +114,7 @@ jobs:
       - changes
       - fast-checks
       - validate-secrets
+      - validate-pr-description
     steps:
       - name: Check required PR jobs
         env:
@@ -98,6 +122,7 @@ jobs:
             changes=${{ needs.changes.result }}
             fast-checks=${{ needs.fast-checks.result }}
             validate-secrets=${{ needs.validate-secrets.result }}
+            validate-pr-description=${{ needs.validate-pr-description.result }}
         run: |
           failed=0
           for entry in $RESULTS; do

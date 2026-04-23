@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
+source "${REPO_DIR}/scripts/lib/global-packages.sh"
 
 find_brew_bin() {
   if command -v brew >/dev/null 2>&1; then
@@ -54,6 +55,11 @@ if [[ -f "${REPO_DIR}/Brewfile" ]]; then
 else
   echo "No Brewfile found in ${REPO_DIR}; skipping brew bundle."
 fi
+
+echo "==> Restoring global packages"
+restore_npm_globals "${REPO_DIR}"
+restore_pip_globals "${REPO_DIR}"
+restore_cargo_globals "${REPO_DIR}"
 
 echo "==> Symlinking dotfiles"
 if [[ -d "${DOTFILES_DIR}" ]]; then
