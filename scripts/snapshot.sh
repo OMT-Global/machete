@@ -8,6 +8,7 @@ source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
 source "${REPO_DIR}/scripts/lib/macos-defaults.sh"
 source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
+source "${REPO_DIR}/scripts/lib/snapshot-tags.sh"
 
 WITH_EXTENSIONS=0
 
@@ -38,9 +39,16 @@ while [[ $# -gt 0 ]]; do
       echo "" >&2
       usage >&2
       exit 1
-    ;;
+      ;;
   esac
 done
+
+echo "==> Creating rollback snapshot"
+if SNAPSHOT_TAG="$(create_snapshot_tag "${REPO_DIR}" "snapshot")"; then
+  echo "  - ${SNAPSHOT_TAG}"
+else
+  echo "  - Not in a git worktree; skipping rollback snapshot."
+fi
 
 echo "==> Exporting Homebrew packages to Brewfile"
 if command -v brew >/dev/null 2>&1; then

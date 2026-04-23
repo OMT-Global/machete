@@ -6,6 +6,16 @@ DOTFILES_DIR="${REPO_DIR}/dotfiles"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
 source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
+source "${REPO_DIR}/scripts/lib/snapshot-tags.sh"
+
+if [[ "${MACHETE_SKIP_SNAPSHOT_TAG:-0}" != "1" ]]; then
+  echo "==> Creating rollback snapshot"
+  if SNAPSHOT_TAG="$(create_snapshot_tag "${REPO_DIR}" "setup")"; then
+    echo "  - ${SNAPSHOT_TAG}"
+  else
+    echo "  - Not in a git worktree; skipping rollback snapshot."
+  fi
+fi
 
 find_brew_bin() {
   if command -v brew >/dev/null 2>&1; then

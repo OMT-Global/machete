@@ -82,6 +82,12 @@ assert_file_equals() {
   diff -u "${expected_file}" "${actual_file}"
 }
 
+write_list_file "${TMP_DIR}/empty-list" ""
+if [[ -s "${TMP_DIR}/empty-list" ]]; then
+  echo "Expected empty package lists to write an empty file" >&2
+  exit 1
+fi
+
 snapshot_npm_globals "${TMP_DIR}"
 printf '%s\n' eslint prettier > "${TMP_DIR}/expected-npm"
 assert_file_equals "${TMP_DIR}/expected-npm" "$(npm_packages_file "${TMP_DIR}")"

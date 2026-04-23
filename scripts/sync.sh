@@ -2,6 +2,11 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${REPO_DIR}/scripts/lib/snapshot-tags.sh"
+
+echo "==> Creating rollback snapshot"
+SNAPSHOT_TAG="$(create_snapshot_tag "${REPO_DIR}" "sync")"
+echo "  - ${SNAPSHOT_TAG}"
 
 echo "==> Pulling latest from remote"
 cd "${REPO_DIR}"
@@ -29,4 +34,4 @@ if [[ "${STASHED}" -eq 1 ]]; then
 fi
 
 echo "==> Re-applying setup"
-"${REPO_DIR}/scripts/setup.sh"
+MACHETE_SKIP_SNAPSHOT_TAG=1 "${REPO_DIR}/scripts/setup.sh"

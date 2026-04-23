@@ -108,32 +108,34 @@ if [[ "${#PATHS[@]}" -eq 0 && "${DO_BREW}" -eq 0 ]]; then
   show_header "Brewfile"
   diff_brewfile
 else
-  for path in "${PATHS[@]}"; do
-    case "${path}" in
-      Brewfile)
-        show_header "Brewfile"
-        diff_brewfile
-        ;;
-      dotfiles/*)
-        relative_path="${path#dotfiles/}"
-        show_header "${relative_path}"
-        diff_dotfile "${relative_path}"
-        ;;
-      .*)
-        show_header "${path}"
-        diff_dotfile "${path}"
-        ;;
-      *)
-        if [[ -f "${REPO_DIR}/dotfiles/${path}" ]]; then
+  if [[ "${#PATHS[@]}" -gt 0 ]]; then
+    for path in "${PATHS[@]}"; do
+      case "${path}" in
+        Brewfile)
+          show_header "Brewfile"
+          diff_brewfile
+          ;;
+        dotfiles/*)
+          relative_path="${path#dotfiles/}"
+          show_header "${relative_path}"
+          diff_dotfile "${relative_path}"
+          ;;
+        .*)
           show_header "${path}"
           diff_dotfile "${path}"
-        else
-          echo "  [!] ${path}: not recognized as a tracked dotfile or Brewfile"
-          EXIT_CODE=1
-        fi
-        ;;
-    esac
-  done
+          ;;
+        *)
+          if [[ -f "${REPO_DIR}/dotfiles/${path}" ]]; then
+            show_header "${path}"
+            diff_dotfile "${path}"
+          else
+            echo "  [!] ${path}: not recognized as a tracked dotfile or Brewfile"
+            EXIT_CODE=1
+          fi
+          ;;
+      esac
+    done
+  fi
 
   if [[ "${DO_BREW}" -eq 1 ]]; then
     show_header "Brewfile"
