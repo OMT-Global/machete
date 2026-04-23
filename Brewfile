@@ -8,6 +8,8 @@ brew "ast-grep"
 brew "awscli"
 # Clone of cat(1) with syntax highlighting and Git integration
 brew "bat"
+# TAP-compliant test framework for Bash
+brew "bats-core"
 # Secure and free password manager for all of your devices
 brew "bitwarden-cli"
 # Copy files from your terminal that actually paste into GUI apps
