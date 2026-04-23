@@ -14,6 +14,7 @@ Usage:
 Commands:
   setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
   snapshot   Export current state to repo: Brewfile, global packages, services, dotfiles, defaults template
+             Use --with-extensions to also capture VS Code-compatible editor extensions
   services   Start Homebrew services listed in defaults/brew-services.txt
   update     Upgrade all Homebrew packages and clean up
   doctor     Check what's installed, symlinked, and in sync with the repo
@@ -26,6 +27,7 @@ Examples:
   ./machete doctor       # check current state
   ./machete diff         # compare live state before snapshotting
   ./machete snapshot     # capture what's on your Mac now
+  ./machete snapshot --with-extensions
   ./machete services     # restore saved Homebrew services
   ./machete update       # keep packages current
   ./machete sync         # pull + re-apply after a change

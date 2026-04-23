@@ -63,8 +63,11 @@ DRIFT_OUTPUT="$(editor_extensions_diff "${EXTENSIONS_FILE}")"
 
 EMPTY_BIN="${TMP_DIR}/empty-bin"
 mkdir -p "${EMPTY_BIN}"
-PATH="${EMPTY_BIN}:${ORIGINAL_PATH}"
+PATH="${EMPTY_BIN}"
 DRIFT_OUTPUT="$(editor_extensions_diff "${EXTENSIONS_FILE}")"
 [[ "${DRIFT_OUTPUT}" == "missing-editor" ]]
+RESTORE_OUTPUT="$(editor_extensions_restore "${EXTENSIONS_FILE}")"
+[[ "${RESTORE_OUTPUT}" == *"No VS Code-compatible editor CLI found; skipping extension install."* ]]
+PATH="${ORIGINAL_PATH}"
 
 echo "Editor extensions tests passed."
