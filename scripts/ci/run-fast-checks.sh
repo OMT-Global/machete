@@ -10,3 +10,4 @@ bash tests/homebrew-services.sh
 bash tests/global-packages.sh
 bash tests/editor-extensions.sh
 bash tests/snapshot-tags.sh
+bash tests/macos-defaults.sh

@@ -10,6 +10,8 @@ trap 'rm -rf "${tmp_dir}"' EXIT
 git -C "${tmp_dir}" init --quiet
 git -C "${tmp_dir}" config user.email "machete-tests@example.invalid"
 git -C "${tmp_dir}" config user.name "machete tests"
+git -C "${tmp_dir}" config commit.gpgsign false
+git -C "${tmp_dir}" config tag.gpgsign false
 
 printf "one\n" >"${tmp_dir}/state.txt"
 git -C "${tmp_dir}" add state.txt

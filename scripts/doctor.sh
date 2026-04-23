@@ -26,6 +26,21 @@ hash_file() {
   fi
 }
 
+canonical_file_path() {
+  local path="$1"
+  local dir
+  local base
+
+  dir="$(dirname "${path}")"
+  base="$(basename "${path}")"
+
+  if [[ -d "${dir}" ]]; then
+    (cd "${dir}" && printf '%s/%s\n' "$(pwd -P)" "${base}")
+  else
+    printf '%s\n' "${path}"
+  fi
+}
+
 # --- Homebrew health ---
 header "Homebrew"
 if command -v brew >/dev/null 2>&1; then
@@ -171,7 +186,11 @@ if [[ -d "${DOTFILES_DIR}" ]]; then
       warn "${rel}: missing from home directory (not symlinked)"
     elif [[ -L "${dst}" ]]; then
       target="$(readlink "${dst}")"
-      if [[ "${target}" == "${src}" ]]; then
+      if [[ "${target}" != /* ]]; then
+        target="$(dirname "${dst}")/${target}"
+      fi
+
+      if [[ "$(canonical_file_path "${target}")" == "$(canonical_file_path "${src}")" ]]; then
         ok "${rel}: symlinked correctly"
       else
         warn "${rel}: symlink points elsewhere -> ${target}"
