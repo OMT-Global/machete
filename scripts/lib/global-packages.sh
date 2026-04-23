@@ -31,6 +31,7 @@ write_list_file() {
     for entry in "$@"; do
       [[ -n "${entry}" ]] && printf '%s\n' "${entry}"
     done
+    true
   } | LC_ALL=C sort -u > "${target}"
 }
 
