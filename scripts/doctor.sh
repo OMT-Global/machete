@@ -5,6 +5,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
+source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
 
 EXIT_CODE=0
 
@@ -131,6 +132,31 @@ if [[ -f "${CARGO_FILE}" ]]; then
 else
   info "No cargo global snapshot yet — run: ./machete snapshot"
 fi
+
+# --- Editor extensions ---
+header "Editor extensions"
+EDITOR_EXTENSIONS_FILE="$(editor_extensions_file)"
+EDITOR_EXTENSIONS_STATE="$(editor_extensions_diff "${EDITOR_EXTENSIONS_FILE}")"
+case "${EDITOR_EXTENSIONS_STATE}" in
+  absent)
+    info "No packages/vscode-extensions.txt — run: ./machete snapshot --with-extensions"
+    ;;
+  missing-editor)
+    warn "packages/vscode-extensions.txt exists, but no VS Code-compatible editor CLI was found"
+    ;;
+  clean)
+    ok "Editor extensions match packages/vscode-extensions.txt"
+    ;;
+  *)
+    warn "Editor extension drift detected — run: ./machete setup or ./machete snapshot --with-extensions"
+    while IFS=$'\t' read -r drift_type extension; do
+      case "${drift_type}" in
+        missing) echo "      missing: ${extension}" ;;
+        extra) echo "      extra: ${extension}" ;;
+      esac
+    done <<< "${EDITOR_EXTENSIONS_STATE}"
+    ;;
+esac
 
 # --- Dotfiles ---
 header "Dotfiles"

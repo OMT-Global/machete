@@ -5,6 +5,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
+source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
 
 find_brew_bin() {
   if command -v brew >/dev/null 2>&1; then
@@ -83,6 +84,8 @@ fi
 
 echo "==> Restoring Homebrew services"
 brew_services_restore "$(brew_services_state_file)"
+
+editor_extensions_restore "$(editor_extensions_file)"
 
 echo "==> Applying macOS defaults"
 DEFAULTS_SCRIPT="${REPO_DIR}/defaults/macos-defaults.sh"
