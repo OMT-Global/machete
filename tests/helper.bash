@@ -15,6 +15,12 @@ setup_test_repo() {
   [[ ! -d "${PROJECT_ROOT}/defaults" ]] || cp -R "${PROJECT_ROOT}/defaults" "${TEST_REPO}/defaults"
   mkdir -p "${TEST_REPO}/dotfiles"
 
+  git -C "${TEST_REPO}" init --quiet
+  git -C "${TEST_REPO}" config user.email "machete-tests@example.invalid"
+  git -C "${TEST_REPO}" config user.name "machete tests"
+  git -C "${TEST_REPO}" add .
+  git -C "${TEST_REPO}" commit --quiet -m "initial fixture"
+
   export HOME="${TEST_HOME}"
   export PATH="${FAKE_BIN}:${PATH}"
 }
