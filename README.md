@@ -9,6 +9,8 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ```
 ./machete setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
 ./machete snapshot   Export current state to repo: Brewfile, global packages, services, dotfiles, defaults template
+./machete track      Add one or more home-directory files to dotfiles/ and symlink them back into $HOME
+./machete untrack    Remove one or more files from dotfiles/ and stop managing them
 ./machete services   Start Homebrew services listed in defaults/brew-services.txt
 ./machete history    List rollback snapshot tags, newest first
 ./machete rollback   Restore the latest snapshot tag and re-apply setup
@@ -68,6 +70,8 @@ cd machete
 ./machete services   # start saved Homebrew services
 ./machete update     # upgrade all packages
 ./machete sync       # pull latest + re-apply
+./machete track .config/ghostty/config
+./machete untrack .vimrc
 ./machete history    # list rollback snapshots
 ./machete rollback   # restore the newest snapshot and re-apply setup
 ```
@@ -126,7 +130,11 @@ Files in `dotfiles/` are **symlinked** (not copied) into `$HOME` by `./machete s
 - No manual syncing required
 - `./machete snapshot` re-copies them if you add new dotfiles to track
 
-To add a new dotfile, copy it into `dotfiles/` and run `./machete setup` to create the symlink.
+To start tracking a new file, run `./machete track PATH`. This copies `~/PATH` into `dotfiles/PATH` and replaces the home file with a symlink back into the repo.
+
+To stop tracking a file, run `./machete untrack PATH`. If the home file is still symlinked to the repo copy, machete converts it back into a regular file before removing `dotfiles/PATH`.
+
+`./machete snapshot` refreshes whatever is already tracked under `dotfiles/`. On a brand-new repo with no tracked dotfiles yet, it still seeds the default starter set (`.zshrc`, `.zprofile`, `.gitconfig`, `.gitignore_global`, `.vimrc`, `.ssh/config`) when those files exist.
 
 Before publishing or sharing a machete repo, template personal identity fields in dotfiles such as `.gitconfig` and remove shell snippets that load local API tokens from the keychain or environment.
 

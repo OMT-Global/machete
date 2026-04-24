@@ -4,6 +4,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DOTFILES_DIR="${REPO_DIR}/dotfiles"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
+source "${REPO_DIR}/scripts/lib/dotfiles.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
 source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
 
@@ -23,21 +24,6 @@ hash_file() {
     sha256sum "$path" | awk '{print $1}'
   else
     cksum "$path" | awk '{print $1}'
-  fi
-}
-
-canonical_file_path() {
-  local path="$1"
-  local dir
-  local base
-
-  dir="$(dirname "${path}")"
-  base="$(basename "${path}")"
-
-  if [[ -d "${dir}" ]]; then
-    (cd "${dir}" && printf '%s/%s\n' "$(pwd -P)" "${base}")
-  else
-    printf '%s\n' "${path}"
   fi
 }
 
@@ -179,7 +165,7 @@ if [[ -d "${DOTFILES_DIR}" ]]; then
   FOUND=0
   while IFS= read -r src; do
     rel="${src#${DOTFILES_DIR}/}"
-    dst="${HOME}/${rel}"
+    dst="$(dotfile_home_path "${rel}")"
     FOUND=$((FOUND + 1))
 
     if [[ ! -e "${dst}" ]]; then
@@ -190,7 +176,7 @@ if [[ -d "${DOTFILES_DIR}" ]]; then
         target="$(dirname "${dst}")/${target}"
       fi
 
-      if [[ "$(canonical_file_path "${target}")" == "$(canonical_file_path "${src}")" ]]; then
+      if [[ "$(dotfile_canonical_path "${target}")" == "$(dotfile_canonical_path "${src}")" ]]; then
         ok "${rel}: symlinked correctly"
       else
         warn "${rel}: symlink points elsewhere -> ${target}"
@@ -204,7 +190,7 @@ if [[ -d "${DOTFILES_DIR}" ]]; then
         warn "${rel}: content differs from repo — run: ./machete diff ${rel}"
       fi
     fi
-  done < <(find "${DOTFILES_DIR}" -type f ! -name '.gitkeep' | sort)
+  done < <(dotfiles_list "${DOTFILES_DIR}")
 
   if [[ "${FOUND}" -eq 0 ]]; then
     info "No dotfiles committed yet — run: ./machete snapshot"
