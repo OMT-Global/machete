@@ -184,6 +184,16 @@ GIT
   chmod +x "${FAKE_BIN}/git"
 }
 
+install_fake_launchctl() {
+  cat > "${FAKE_BIN}/launchctl" <<'LAUNCHCTL'
+#!/usr/bin/env bash
+set -euo pipefail
+
+printf '%s\n' "$*" >> "${FAKE_LAUNCHCTL_LOG:-/dev/null}"
+LAUNCHCTL
+  chmod +x "${FAKE_BIN}/launchctl"
+}
+
 write_fake_brew_dump() {
   FAKE_BREW_DUMP_FILE="${TEST_ROOT}/brew-dump"
   export FAKE_BREW_DUMP_FILE

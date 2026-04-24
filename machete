@@ -16,6 +16,7 @@ Commands:
   setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
   snapshot   Export current state to repo: Brewfile, global packages, services, dotfiles, defaults template
              Use --with-extensions to also capture VS Code-compatible editor extensions
+  schedule   Install a launchd agent that runs sync and update automatically each day
   track      Add one or more home-directory files to dotfiles/ and symlink them back into $HOME
   untrack    Remove one or more files from dotfiles/ and replace managed home symlinks with regular files
   services   Start Homebrew services listed in defaults/brew-services.txt
@@ -38,6 +39,7 @@ Examples:
   ./machete snapshot --profile work --with-extensions
   ./machete snapshot     # capture what's on your Mac now
   ./machete snapshot --with-extensions
+  ./machete schedule     # install a daily sync + update launch agent
   ./machete track .config/ghostty/config
   ./machete untrack .vimrc
   ./machete services     # restore saved Homebrew services
@@ -97,6 +99,7 @@ exec_script() {
 case "${CMD}" in
   setup)    exec_script "${SCRIPTS_DIR}/setup.sh" ;;
   snapshot) exec_script "${SCRIPTS_DIR}/snapshot.sh" ;;
+  schedule) exec_script "${SCRIPTS_DIR}/schedule.sh" ;;
   track)    exec_script "${SCRIPTS_DIR}/track.sh" ;;
   untrack)  exec_script "${SCRIPTS_DIR}/untrack.sh" ;;
   services) exec_script "${SCRIPTS_DIR}/services.sh" ;;

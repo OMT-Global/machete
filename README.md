@@ -9,6 +9,7 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ```
 ./machete setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
 ./machete snapshot   Export current state to the active profile or --profile target
+./machete schedule   Install a daily launchd agent that runs sync + update automatically
 ./machete track      Add one or more home-directory files to dotfiles/ and symlink them back into $HOME
 ./machete untrack    Remove one or more files from dotfiles/ and stop managing them
 ./machete services   Start Homebrew services listed in defaults/brew-services.txt
@@ -74,6 +75,7 @@ cd machete
 ./machete diff       # compare live state before snapshotting
 ./machete verify --init  # record a checksum baseline
 ./machete verify     # check tracked files against that baseline
+./machete schedule   # install a daily sync + update launch agent
 ./machete doctor --profile work
 ./machete services   # start saved Homebrew services
 ./machete update     # upgrade all packages
@@ -85,6 +87,8 @@ cd machete
 ```
 
 `./machete verify --init` records SHA256 checksums for the active profile's tracked dotfiles and Brewfile in `~/.machete/checksums.sqlite`. Later `./machete verify` runs report `NEW`, `CHANGED`, or `MISSING` files and exit non-zero when drift is found. Use `./machete verify --full --init` and `./machete verify --full` for a broader `$HOME` scan.
+
+`./machete schedule` installs a per-user `launchd` plist in `~/Library/LaunchAgents/` and a small runner script in `~/.machete/schedule/<profile>/run.sh`. By default it runs daily at `09:00` local time, calling `./machete sync` and then `./machete update` for the active profile. Use `--hour` and `--minute` to change the schedule.
 
 To restore a specific snapshot, pass its tag:
 
