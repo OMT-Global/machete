@@ -4,7 +4,6 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_DIR}/scripts/lib/profiles.sh"
 MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
-DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/dotfiles.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
@@ -60,12 +59,14 @@ if ! command -v brew >/dev/null 2>&1; then
 fi
 
 echo "==> Installing Brew packages from Brewfile"
-Brewfile_PATH="$(profile_brewfile_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
-if [[ -f "${Brewfile_PATH}" ]]; then
-  if brew bundle check --file="${Brewfile_PATH}" --no-upgrade >/dev/null 2>&1; then
+MERGED_BREWFILE="$(mktemp "${TMPDIR:-/tmp}/machete-setup-brewfile.XXXXXX")"
+trap 'rm -f "${MERGED_BREWFILE}"' EXIT
+profile_write_merged_brewfile "${REPO_DIR}" "${MACHETE_PROFILE}" "${MERGED_BREWFILE}"
+if [[ -s "${MERGED_BREWFILE}" ]]; then
+  if brew bundle check --file="${MERGED_BREWFILE}" --no-upgrade >/dev/null 2>&1; then
     echo "Brewfile already satisfied."
   else
-    brew bundle install --file="${Brewfile_PATH}"
+    brew bundle install --file="${MERGED_BREWFILE}"
   fi
 else
   echo "No Brewfile found for profile '${MACHETE_PROFILE}'; skipping brew bundle."
@@ -77,22 +78,23 @@ restore_pip_globals "${REPO_DIR}"
 restore_cargo_globals "${REPO_DIR}"
 
 echo "==> Symlinking dotfiles"
-if [[ -d "${DOTFILES_DIR}" ]]; then
-  while IFS= read -r src; do
-    rel="${src#${DOTFILES_DIR}/}"
-    dst="$(dotfile_home_path "${rel}")"
-    mkdir -p "$(dirname "${dst}")"
+FOUND_DOTFILES=0
+while IFS=$'\t' read -r rel src; do
+  FOUND_DOTFILES=1
+  dst="$(dotfile_home_path "${rel}")"
+  mkdir -p "$(dirname "${dst}")"
 
-    if [[ -e "${dst}" && ! -L "${dst}" ]]; then
-      backup="${dst}.bak.$(date +%Y%m%d%H%M%S)"
-      echo "  - Backing up ${rel} to ${backup}"
-      mv "${dst}" "${backup}"
-    fi
+  if [[ -e "${dst}" && ! -L "${dst}" ]]; then
+    backup="${dst}.bak.$(date +%Y%m%d%H%M%S)"
+    echo "  - Backing up ${rel} to ${backup}"
+    mv "${dst}" "${backup}"
+  fi
 
-    echo "  - Linking ${rel}"
-    ln -sfn "${src}" "${dst}"
-  done < <(dotfiles_list "${DOTFILES_DIR}")
-else
+  echo "  - Linking ${rel}"
+  ln -sfn "${src}" "${dst}"
+done < <(profile_collect_dotfiles "${REPO_DIR}" "${MACHETE_PROFILE}")
+
+if [[ "${FOUND_DOTFILES}" -eq 0 ]]; then
   echo "No dotfiles/ directory found; skipping symlinks."
 fi
 

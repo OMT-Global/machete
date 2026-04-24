@@ -56,6 +56,9 @@ BREW_DUMP
   echo "Host work-example" > "${TEST_REPO}/profiles/work/dotfiles/.ssh/config"
   cp "${TEST_REPO}/profiles/work/dotfiles/.ssh/config" "${HOME}/.ssh/config"
 
+  run "${TEST_REPO}/machete" profile create work
+  assert_success
+
   run "${TEST_REPO}/machete" help --profile work
   assert_success
 
@@ -63,4 +66,21 @@ BREW_DUMP
 
   assert_success
   assert_output_contains ".ssh/config: matches"
+}
+
+@test "diff resolves layered dotfiles from base and the active profile" {
+  mkdir -p "${TEST_REPO}/profiles/base/dotfiles/.ssh" "${TEST_REPO}/profiles/work/dotfiles" "${HOME}/.ssh"
+  echo "Host base-example" > "${TEST_REPO}/profiles/base/dotfiles/.ssh/config"
+  echo "export WORK=1" > "${TEST_REPO}/profiles/work/dotfiles/.profile"
+  cp "${TEST_REPO}/profiles/base/dotfiles/.ssh/config" "${HOME}/.ssh/config"
+  cp "${TEST_REPO}/profiles/work/dotfiles/.profile" "${HOME}/.profile"
+
+  run "${TEST_REPO}/machete" help --profile work
+  assert_success
+
+  run "${TEST_REPO}/machete" diff .ssh/config .profile
+
+  assert_success
+  assert_output_contains ".ssh/config: matches"
+  assert_output_contains ".profile: matches"
 }
