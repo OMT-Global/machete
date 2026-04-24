@@ -71,6 +71,7 @@ brewfile_dump_filtered() {
   local raw_file
   raw_file="$(mktemp "${TMPDIR:-/tmp}/machete-brewfile.raw.XXXXXX")"
 
+  mkdir -p "$(dirname "${destination_file}")"
   HOMEBREW_NO_AUTO_UPDATE=1 brew bundle dump --file="$raw_file" --force "${brewfile_dump_flags[@]}"
   brewfile_filter "$raw_file" "$destination_file"
   rm -f "$raw_file"

@@ -3,13 +3,14 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DIR="${REPO_DIR}/scripts"
+source "${SCRIPTS_DIR}/lib/profiles.sh"
 
 usage() {
   cat <<EOF
 machete — swiss army knife for macOS setup and maintenance
 
 Usage:
-  ./machete <command>
+  ./machete <command> [options]
 
 Commands:
   setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
@@ -27,11 +28,13 @@ Commands:
   defaults   Apply macOS system preferences from defaults/macos-defaults.sh
   defaults --init
              Create defaults/macos-defaults.sh with an interactive preset picker
+  profile    List profiles or scaffold a new one
 
 Examples:
-  ./machete setup        # new machine
-  ./machete doctor       # check current state
+  ./machete setup --profile work
+  ./machete doctor       # check current state for the active profile
   ./machete diff         # compare live state before snapshotting
+  ./machete snapshot --profile work --with-extensions
   ./machete snapshot     # capture what's on your Mac now
   ./machete snapshot --with-extensions
   ./machete track .config/ghostty/config
@@ -41,38 +44,68 @@ Examples:
   ./machete rollback     # restore the latest snapshot
   ./machete update       # keep packages current
   ./machete sync         # pull + re-apply after a change
+  ./machete profile list
+  ./machete profile create work
 
 EOF
 }
 
-CMD="${1:-}"
-if [[ $# -gt 0 ]]; then
-  shift
+ARGS=()
+EXPLICIT_PROFILE=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --profile)
+      if [[ $# -lt 2 ]]; then
+        echo "Missing value for --profile" >&2
+        exit 1
+      fi
+      EXPLICIT_PROFILE="$2"
+      shift 2
+      ;;
+    --profile=*)
+      EXPLICIT_PROFILE="${1#--profile=}"
+      shift
+      ;;
+    *)
+      ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+CMD="${ARGS[0]:-}"
+if [[ "${#ARGS[@]}" -gt 0 ]]; then
+  ARGS=("${ARGS[@]:1}")
 fi
 
+MACHETE_PROFILE="$(resolve_profile "${REPO_DIR}" "${EXPLICIT_PROFILE}")"
+export MACHETE_PROFILE
+
 case "${CMD}" in
-  setup)    exec "${SCRIPTS_DIR}/setup.sh" "$@" ;;
-  snapshot) exec "${SCRIPTS_DIR}/snapshot.sh" "$@" ;;
-  track)    exec "${SCRIPTS_DIR}/track.sh" "$@" ;;
-  untrack)  exec "${SCRIPTS_DIR}/untrack.sh" "$@" ;;
-  services) exec "${SCRIPTS_DIR}/services.sh" "$@" ;;
-  history)  exec "${SCRIPTS_DIR}/history.sh" "$@" ;;
-  rollback) exec "${SCRIPTS_DIR}/rollback.sh" "$@" ;;
-  update)   exec "${SCRIPTS_DIR}/update.sh" "$@" ;;
-  doctor)   exec "${SCRIPTS_DIR}/doctor.sh" "$@" ;;
-  diff)     exec "${SCRIPTS_DIR}/diff.sh" "$@" ;;
-  sync)     exec "${SCRIPTS_DIR}/sync.sh" "$@" ;;
+  setup)    exec "${SCRIPTS_DIR}/setup.sh" "${ARGS[@]}" ;;
+  snapshot) exec "${SCRIPTS_DIR}/snapshot.sh" "${ARGS[@]}" ;;
+  track)    exec "${SCRIPTS_DIR}/track.sh" "${ARGS[@]}" ;;
+  untrack)  exec "${SCRIPTS_DIR}/untrack.sh" "${ARGS[@]}" ;;
+  services) exec "${SCRIPTS_DIR}/services.sh" "${ARGS[@]}" ;;
+  history)  exec "${SCRIPTS_DIR}/history.sh" "${ARGS[@]}" ;;
+  rollback) exec "${SCRIPTS_DIR}/rollback.sh" "${ARGS[@]}" ;;
+  update)   exec "${SCRIPTS_DIR}/update.sh" "${ARGS[@]}" ;;
+  doctor)   exec "${SCRIPTS_DIR}/doctor.sh" "${ARGS[@]}" ;;
+  diff)     exec "${SCRIPTS_DIR}/diff.sh" "${ARGS[@]}" ;;
+  sync)     exec "${SCRIPTS_DIR}/sync.sh" "${ARGS[@]}" ;;
+  profile)  exec "${SCRIPTS_DIR}/profile.sh" "${ARGS[@]}" ;;
   defaults)
-    DEFAULTS_SCRIPT="${REPO_DIR}/defaults/macos-defaults.sh"
-    if [[ "${1:-}" == "--init" ]]; then
-      shift
+    DEFAULTS_SCRIPT="$(profile_defaults_script_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
+    if [[ "${ARGS[0]:-}" == "--init" ]]; then
+      ARGS=("${ARGS[@]:1}")
       # shellcheck source=scripts/lib/macos-defaults.sh
       source "${SCRIPTS_DIR}/lib/macos-defaults.sh"
-      macos_defaults_init "${DEFAULTS_SCRIPT}" "$@"
+      macos_defaults_init "${DEFAULTS_SCRIPT}" "${ARGS[@]}"
     elif [[ -x "${DEFAULTS_SCRIPT}" ]]; then
-      exec "${DEFAULTS_SCRIPT}" "$@"
+      exec "${DEFAULTS_SCRIPT}" "${ARGS[@]}"
     else
-      echo "No defaults/macos-defaults.sh found. Run: ./machete defaults --init"
+      echo "No defaults script found for profile '${MACHETE_PROFILE}'. Run: ./machete defaults --init"
       exit 1
     fi
     ;;

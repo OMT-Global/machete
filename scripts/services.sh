@@ -2,6 +2,8 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${REPO_DIR}/scripts/lib/profiles.sh"
+MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 
 if ! command -v brew >/dev/null 2>&1; then

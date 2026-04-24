@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
+if ! declare -F profile_brew_services_file >/dev/null 2>&1; then
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/profiles.sh"
+fi
+
 brew_services_state_file() {
-  echo "${MACHETE_BREW_SERVICES_FILE:-${REPO_DIR}/defaults/brew-services.txt}"
+  local profile_name="${MACHETE_PROFILE:-default}"
+  echo "${MACHETE_BREW_SERVICES_FILE:-$(profile_brew_services_file "${REPO_DIR}" "${profile_name}")}"
 }
 
 brew_services_saved_names() {

@@ -2,7 +2,9 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DOTFILES_DIR="${REPO_DIR}/dotfiles"
+source "${REPO_DIR}/scripts/lib/profiles.sh"
+MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
+DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brewfile.sh"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/dotfiles.sh"
@@ -53,7 +55,7 @@ fi
 
 echo "==> Exporting Homebrew packages to Brewfile"
 if command -v brew >/dev/null 2>&1; then
-  brewfile_dump_filtered "${REPO_DIR}/Brewfile"
+  brewfile_dump_filtered "$(profile_brewfile_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
   echo "  - Brewfile updated with portable filters"
 
   echo "==> Exporting Homebrew services to defaults/brew-services.txt"
@@ -100,12 +102,12 @@ else
 fi
 
 echo "==> Ensuring defaults/macos-defaults.sh exists"
-DEFAULTS_SCRIPT="${REPO_DIR}/defaults/macos-defaults.sh"
+DEFAULTS_SCRIPT="$(profile_defaults_script_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
 if [[ ! -f "${DEFAULTS_SCRIPT}" ]]; then
   echo "  - Creating defaults preset"
   macos_defaults_init "${DEFAULTS_SCRIPT}"
 else
-  echo "  - defaults/macos-defaults.sh already exists; not overwriting."
+  echo "  - macOS defaults already exist for profile '${MACHETE_PROFILE}'; not overwriting."
 fi
 
 echo ""
