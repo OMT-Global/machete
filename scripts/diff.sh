@@ -3,6 +3,7 @@ set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_DIR}/scripts/lib/brewfile.sh"
+source "${REPO_DIR}/scripts/lib/dotfiles.sh"
 
 usage() {
   cat <<'EOF'
@@ -103,7 +104,7 @@ if [[ "${#PATHS[@]}" -eq 0 && "${DO_BREW}" -eq 0 ]]; then
   while IFS= read -r tracked_file; do
     relative_path="${tracked_file#${REPO_DIR}/dotfiles/}"
     diff_dotfile "${relative_path}"
-  done < <(find "${REPO_DIR}/dotfiles" -type f ! -name '.gitkeep' | sort)
+  done < <(dotfiles_list "${REPO_DIR}/dotfiles")
 
   show_header "Brewfile"
   diff_brewfile
