@@ -4,7 +4,6 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_DIR}/scripts/lib/profiles.sh"
 MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
-DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/dotfiles.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
@@ -82,12 +81,15 @@ checksum_status() {
 
 # --- Homebrew health ---
 header "Homebrew"
-BREWFILE_PATH="$(profile_brewfile_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
+MERGED_BREWFILE="$(mktemp "${TMPDIR:-/tmp}/machete-doctor-brewfile.XXXXXX")"
+trap 'rm -f "${MERGED_BREWFILE}"' EXIT
+profile_write_merged_brewfile "${REPO_DIR}" "${MACHETE_PROFILE}" "${MERGED_BREWFILE}"
+info "Active profile: ${MACHETE_PROFILE}"
 if command -v brew >/dev/null 2>&1; then
   ok "brew found at $(command -v brew)"
 
-  if [[ -f "${BREWFILE_PATH}" ]]; then
-    if brew bundle check --file="${BREWFILE_PATH}" --no-upgrade >/dev/null 2>&1; then
+  if [[ -s "${MERGED_BREWFILE}" ]]; then
+    if brew bundle check --file="${MERGED_BREWFILE}" --no-upgrade >/dev/null 2>&1; then
       ok "All Brewfile entries installed"
     else
       warn "Brewfile drift detected — run: ./machete setup"
@@ -215,49 +217,44 @@ esac
 
 # --- Dotfiles ---
 header "Dotfiles"
-if [[ -d "${DOTFILES_DIR}" ]]; then
-  FOUND=0
-  while IFS= read -r src; do
-    rel="${src#${DOTFILES_DIR}/}"
-    dst="$(dotfile_home_path "${rel}")"
-    FOUND=$((FOUND + 1))
+FOUND=0
+while IFS=$'\t' read -r rel src; do
+  FOUND=$((FOUND + 1))
+  dst="$(dotfile_home_path "${rel}")"
 
-    if [[ ! -e "${dst}" ]]; then
-      warn "${rel}: missing from home directory (not symlinked)"
-    elif [[ -L "${dst}" ]]; then
-      target="$(readlink "${dst}")"
-      if [[ "${target}" != /* ]]; then
-        target="$(dirname "${dst}")/${target}"
-      fi
-
-      if [[ "$(dotfile_canonical_path "${target}")" == "$(dotfile_canonical_path "${src}")" ]]; then
-        checksum_state="$(checksum_status "${dst}")"
-        case "${checksum_state}" in
-          OK) ok "${rel}: symlinked correctly (hash match)" ;;
-          CHANGED) warn "${rel}: symlinked correctly (CONTENT DRIFT — run: ./machete diff ${rel})" ;;
-          NO_BASELINE) info "${rel}: symlinked correctly (no checksum baseline — run: ./machete verify --init)" ;;
-          NO_PYTHON) info "${rel}: symlinked correctly (checksum skipped; Python 3 not found)" ;;
-          *) info "${rel}: symlinked correctly (checksum skipped)" ;;
-        esac
-      else
-        warn "${rel}: symlink points elsewhere -> ${target}"
-      fi
-    else
-      src_hash="$(hash_file "${src}")"
-      dst_hash="$(hash_file "${dst}")"
-      if [[ "${src_hash}" == "${dst_hash}" ]]; then
-        info "${rel}: content matches but file is not symlinked"
-      else
-        warn "${rel}: content differs from repo — run: ./machete diff ${rel}"
-      fi
+  if [[ ! -e "${dst}" ]]; then
+    warn "${rel}: missing from home directory (not symlinked)"
+  elif [[ -L "${dst}" ]]; then
+    target="$(readlink "${dst}")"
+    if [[ "${target}" != /* ]]; then
+      target="$(dirname "${dst}")/${target}"
     fi
-  done < <(dotfiles_list "${DOTFILES_DIR}")
 
-  if [[ "${FOUND}" -eq 0 ]]; then
-    info "No dotfiles committed yet — run: ./machete snapshot"
+    if [[ "$(dotfile_canonical_path "${target}")" == "$(dotfile_canonical_path "${src}")" ]]; then
+      checksum_state="$(checksum_status "${dst}")"
+      case "${checksum_state}" in
+        OK) ok "${rel}: symlinked correctly (hash match)" ;;
+        CHANGED) warn "${rel}: symlinked correctly (CONTENT DRIFT — run: ./machete diff ${rel})" ;;
+        NO_BASELINE) info "${rel}: symlinked correctly (no checksum baseline — run: ./machete verify --init)" ;;
+        NO_PYTHON) info "${rel}: symlinked correctly (checksum skipped; Python 3 not found)" ;;
+        *) info "${rel}: symlinked correctly (checksum skipped)" ;;
+      esac
+    else
+      warn "${rel}: symlink points elsewhere -> ${target}"
+    fi
+  else
+    src_hash="$(hash_file "${src}")"
+    dst_hash="$(hash_file "${dst}")"
+    if [[ "${src_hash}" == "${dst_hash}" ]]; then
+      info "${rel}: content matches but file is not symlinked"
+    else
+      warn "${rel}: content differs from repo — run: ./machete diff ${rel}"
+    fi
   fi
-else
-  info "No dotfiles/ directory — run: ./machete snapshot"
+done < <(profile_collect_dotfiles "${REPO_DIR}" "${MACHETE_PROFILE}")
+
+if [[ "${FOUND}" -eq 0 ]]; then
+  info "No dotfiles committed yet — run: ./machete snapshot"
 fi
 
 # --- macOS defaults ---

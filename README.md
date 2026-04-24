@@ -9,6 +9,7 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ```
 ./machete setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
 ./machete snapshot   Export current state to the active profile or --profile target
+./machete schedule   Install a daily launchd agent that runs sync + update automatically
 ./machete track      Add one or more home-directory files to dotfiles/ and symlink them back into $HOME
 ./machete untrack    Remove one or more files from dotfiles/ and stop managing them
 ./machete services   Start Homebrew services listed in defaults/brew-services.txt
@@ -76,6 +77,7 @@ cd machete
 ./machete verify --init  # record a checksum baseline
 ./machete verify     # check tracked files against that baseline
 ./machete audit      # full-home drift report since the last snapshot baseline
+./machete schedule   # install a daily sync + update launch agent
 ./machete doctor --profile work
 ./machete services   # start saved Homebrew services
 ./machete update     # upgrade all packages
@@ -89,6 +91,7 @@ cd machete
 `./machete verify --init` records SHA256 checksums for the active profile's tracked dotfiles and Brewfile in `~/.machete/checksums.sqlite`. Later `./machete verify` runs report `NEW`, `CHANGED`, or `MISSING` files and exit non-zero when drift is found. Use `./machete verify --full --init` and `./machete verify --full` for a broader `$HOME` scan.
 
 `./machete snapshot` also refreshes a full-home audit baseline in the background. `./machete audit` compares the current filesystem against that baseline, groups output into `NEW FILES`, `CHANGED FILES`, and `MISSING FILES`, and exits non-zero when drift is found. Use `--dir` to limit the report to a subtree, `--since YYYY-MM-DD` to filter recent changes, and `--export report.csv` to write CSV output.
+`./machete schedule` installs a per-user `launchd` plist in `~/Library/LaunchAgents/` and a small runner script in `~/.machete/schedule/<profile>/run.sh`. By default it runs daily at `09:00` local time, calling `./machete sync` and then `./machete update` for the active profile. Use `--hour` and `--minute` to change the schedule.
 
 To restore a specific snapshot, pass its tag:
 
@@ -117,6 +120,9 @@ machete/
     macos-defaults.sh
     brew-services.txt
   profiles/
+    base/
+      Brewfile
+      dotfiles/
     work/
       Brewfile
       dotfiles/
@@ -124,8 +130,6 @@ machete/
       defaults/
         macos-defaults.sh
         brew-services.txt
-  .machete/
-    active-profile         # persisted current profile name
   scripts/
     setup.sh               # internals for ./machete setup
     snapshot.sh            # internals for ./machete snapshot
@@ -144,11 +148,13 @@ machete/
 `machete` supports multiple machine profiles in one repo.
 
 - `default` keeps the existing flat repo layout for backward compatibility.
+- When `profiles/base/` exists, it is always applied first and named profiles layer on top of it.
 - Named profiles live under `profiles/<name>/`.
 - `--profile <name>` works with `setup`, `snapshot`, `sync`, `doctor`, and `diff`.
-- The last explicit `--profile` is stored in `.machete/active-profile` and reused on later commands.
+- The last explicit `--profile` is stored in `~/.machete/profile` and reused on later commands.
 
 ```bash
+mkdir -p profiles/base
 ./machete profile create work
 ./machete snapshot --profile work
 ./machete doctor           # now uses the persisted work profile

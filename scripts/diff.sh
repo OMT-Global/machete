@@ -4,7 +4,6 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${REPO_DIR}/scripts/lib/profiles.sh"
 MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
-DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brewfile.sh"
 source "${REPO_DIR}/scripts/lib/dotfiles.sh"
 
@@ -56,8 +55,12 @@ show_header() {
 
 diff_dotfile() {
   local relative_path="$1"
-  local repo_file="${DOTFILES_DIR}/${relative_path}"
+  local repo_file
   local home_file="${HOME}/${relative_path}"
+
+  if ! repo_file="$(profile_dotfile_source_path "${REPO_DIR}" "${MACHETE_PROFILE}" "${relative_path}")"; then
+    repo_file=""
+  fi
 
   if [[ ! -f "${repo_file}" ]]; then
     echo "  [!] ${relative_path}: not tracked in dotfiles/"
@@ -80,15 +83,17 @@ diff_dotfile() {
 }
 
 diff_brewfile() {
-  local brewfile_path
-  brewfile_path="$(profile_brewfile_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
   local tmp_dump
+  local merged_brewfile
   tmp_dump="$(mktemp "${TMPDIR:-/tmp}/machete-brewfile.diff.XXXXXX")"
+  merged_brewfile="$(mktemp "${TMPDIR:-/tmp}/machete-brewfile.repo.XXXXXX")"
+  profile_write_merged_brewfile "${REPO_DIR}" "${MACHETE_PROFILE}" "${merged_brewfile}"
 
-  if [[ ! -f "${brewfile_path}" ]]; then
+  if [[ ! -s "${merged_brewfile}" ]]; then
     echo "  [!] Brewfile not found for profile '${MACHETE_PROFILE}'"
     EXIT_CODE=1
     rm -f "${tmp_dump}"
+    rm -f "${merged_brewfile}"
     return
   fi
 
@@ -96,26 +101,27 @@ diff_brewfile() {
     echo "  [!] brew not found; cannot compare Brewfile"
     EXIT_CODE=1
     rm -f "${tmp_dump}"
+    rm -f "${merged_brewfile}"
     return
   fi
 
   brewfile_dump_filtered "${tmp_dump}"
 
-  if diff -u --label "repo/Brewfile" --label "current/brew bundle dump" "${brewfile_path}" "${tmp_dump}"; then
+  if diff -u --label "repo/Brewfile" --label "current/brew bundle dump" "${merged_brewfile}" "${tmp_dump}"; then
     echo "  [ok] Brewfile: matches current brew bundle dump"
   else
     EXIT_CODE=1
   fi
 
   rm -f "${tmp_dump}"
+  rm -f "${merged_brewfile}"
 }
 
 if [[ "${#PATHS[@]}" -eq 0 && "${DO_BREW}" -eq 0 ]]; then
   show_header "Dotfiles"
-  while IFS= read -r tracked_file; do
-    relative_path="${tracked_file#${DOTFILES_DIR}/}"
+  while IFS=$'\t' read -r relative_path _; do
     diff_dotfile "${relative_path}"
-  done < <(dotfiles_list "${DOTFILES_DIR}")
+  done < <(profile_collect_dotfiles "${REPO_DIR}" "${MACHETE_PROFILE}")
 
   show_header "Brewfile"
   diff_brewfile
@@ -137,7 +143,7 @@ else
           diff_dotfile "${path}"
           ;;
         *)
-          if [[ -f "${DOTFILES_DIR}/${path}" ]]; then
+          if profile_dotfile_source_path "${REPO_DIR}" "${MACHETE_PROFILE}" "${path}" >/dev/null; then
             show_header "${path}"
             diff_dotfile "${path}"
           else
