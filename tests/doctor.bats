@@ -20,8 +20,24 @@ teardown() {
 
   assert_success
   assert_output_contains "All Brewfile entries installed"
-  assert_output_contains ".zshrc: symlinked correctly"
+  assert_output_contains ".zshrc: symlinked correctly (no checksum baseline"
   assert_output_contains "All checks passed."
+}
+
+@test "doctor reports checksum drift for a correctly symlinked dotfile" {
+  echo 'alias ll="ls -la"' > "${TEST_REPO}/dotfiles/.zshrc"
+  ln -s "${TEST_REPO}/dotfiles/.zshrc" "${HOME}/.zshrc"
+
+  run "${TEST_REPO}/machete" verify --init
+  assert_success
+
+  echo 'alias ll="ls -lah"' > "${HOME}/.zshrc"
+
+  run "${TEST_REPO}/machete" doctor
+
+  assert_failure
+  assert_output_contains ".zshrc: symlinked correctly (CONTENT DRIFT"
+  assert_output_contains "Some checks need attention"
 }
 
 @test "doctor fails when a tracked dotfile is missing from home" {
