@@ -86,6 +86,8 @@ brew "ripgrep"
 brew "rsync"
 # Safe, fast systems programming language
 brew "rust"
+# Static analysis and lint tool for shell scripts
+brew "shellcheck"
 # Non-interactive SSH password auth
 brew "sshpass"
 # Cross-shell prompt

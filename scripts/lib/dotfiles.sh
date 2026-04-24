@@ -33,7 +33,7 @@ normalize_dotfile_path() {
   local path="$1"
 
   case "${path}" in
-    "~/"*) path="${path#~/}" ;;
+    \~/*) path="${path#~/}" ;;
     "${HOME}/"*) path="${path#${HOME}/}" ;;
     dotfiles/*) path="${path#dotfiles/}" ;;
   esac

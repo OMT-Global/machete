@@ -77,7 +77,25 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Run fast checks
+        env:
+          MACHETE_SKIP_SHELLCHECK: '1'
         run: bash scripts/ci/run-fast-checks.sh
+
+  shellcheck:
+    name: ShellCheck
+    runs-on: ['self-hosted', 'synology', 'shell-only', 'private']
+    timeout-minutes: 5
+    needs: changes
+    if: >-
+      github.event.pull_request.draft == false &&
+      (needs.changes.outputs.app == 'true' || needs.changes.outputs.ci == 'true')
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Lint shell scripts
+        run: bash scripts/ci/run-shellcheck.sh
 
   validate-secrets:
     name: Validate Secrets
@@ -113,6 +131,7 @@ jobs:
     needs:
       - changes
       - fast-checks
+      - shellcheck
       - validate-secrets
       - validate-pr-description
     steps:
@@ -121,6 +140,7 @@ jobs:
           RESULTS: >-
             changes=${{ needs.changes.result }}
             fast-checks=${{ needs.fast-checks.result }}
+            shellcheck=${{ needs.shellcheck.result }}
             validate-secrets=${{ needs.validate-secrets.result }}
             validate-pr-description=${{ needs.validate-pr-description.result }}
         run: |

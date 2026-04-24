@@ -1,0 +1,4 @@
+# Repo scripts are authored for bash. Dotfiles are intentionally excluded by
+# scripts/ci/run-shellcheck.sh because they may contain interactive shell setup.
+shell=bash
+external-sources=true

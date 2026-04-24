@@ -11,6 +11,7 @@ repo:
     - AGENTS.md
     - CLAUDE.md
     - CODEOWNERS
+    - .shellcheckrc
     - .githooks/**
     - .devcontainer/**
     - .github/pull_request_template.md
@@ -58,6 +59,7 @@ ci:
   pythonVersion: "3.12"
   fastChecks:
     - secrets
+    - shellcheck
   extendedChecks:
     - mac-bootstrap
   nightlyCron: 0 7 * * *
