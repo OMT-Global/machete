@@ -22,6 +22,7 @@ Commands:
   history    List rollback snapshot tags, newest first
   rollback   Check out a snapshot tag and re-apply setup
   update     Upgrade all Homebrew packages and clean up
+  verify     Hash tracked files and compare them to the checksum baseline
   doctor     Check what's installed, symlinked, and in sync with the repo
   diff       Compare tracked dotfiles and Brewfile against the current machine
   sync       Pull latest repo changes and re-apply setup (idempotent)
@@ -42,6 +43,7 @@ Examples:
   ./machete services     # restore saved Homebrew services
   ./machete history      # list rollback snapshots
   ./machete rollback     # restore the latest snapshot
+  ./machete verify --init
   ./machete update       # keep packages current
   ./machete sync         # pull + re-apply after a change
   ./machete profile list
@@ -101,6 +103,7 @@ case "${CMD}" in
   history)  exec_script "${SCRIPTS_DIR}/history.sh" ;;
   rollback) exec_script "${SCRIPTS_DIR}/rollback.sh" ;;
   update)   exec_script "${SCRIPTS_DIR}/update.sh" ;;
+  verify)   exec_script "${SCRIPTS_DIR}/verify.sh" ;;
   doctor)   exec_script "${SCRIPTS_DIR}/doctor.sh" ;;
   diff)     exec_script "${SCRIPTS_DIR}/diff.sh" ;;
   sync)     exec_script "${SCRIPTS_DIR}/sync.sh" ;;

@@ -14,6 +14,7 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ./machete services   Start Homebrew services listed in defaults/brew-services.txt
 ./machete history    List rollback snapshot tags, newest first
 ./machete rollback   Restore the latest snapshot tag and re-apply setup
+./machete verify     Hash tracked files and compare them to the checksum baseline
 ./machete update     Upgrade all Homebrew packages and clean up
 ./machete doctor     Check what's installed, symlinked, and in sync for the active profile
 ./machete diff       Compare tracked dotfiles and Brewfile for the active profile
@@ -71,6 +72,8 @@ cd machete
 ```bash
 ./machete doctor     # see what's drifted
 ./machete diff       # compare live state before snapshotting
+./machete verify --init  # record a checksum baseline
+./machete verify     # check tracked files against that baseline
 ./machete doctor --profile work
 ./machete services   # start saved Homebrew services
 ./machete update     # upgrade all packages
@@ -80,6 +83,8 @@ cd machete
 ./machete history    # list rollback snapshots
 ./machete rollback   # restore the newest snapshot and re-apply setup
 ```
+
+`./machete verify --init` records SHA256 checksums for the active profile's tracked dotfiles and Brewfile in `~/.machete/checksums.sqlite`. Later `./machete verify` runs report `NEW`, `CHANGED`, or `MISSING` files and exit non-zero when drift is found. Use `./machete verify --full --init` and `./machete verify --full` for a broader `$HOME` scan.
 
 To restore a specific snapshot, pass its tag:
 
