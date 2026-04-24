@@ -121,10 +121,16 @@ def walk_home(home: Path) -> list[Path]:
     return sorted(paths)
 
 
-def compare(conn: sqlite3.Connection, scope: str, paths: list[Path]) -> int:
+def compare(
+    conn: sqlite3.Connection,
+    scope: str,
+    paths: list[Path],
+    report_missing_baseline_paths: bool,
+) -> int:
     existing = load_existing(conn, scope)
     current = {str(path): path for path in paths}
     statuses: list[tuple[str, str]] = []
+    updated_metadata = False
 
     for path_string, path in sorted(current.items()):
         if not path.exists():
@@ -139,12 +145,16 @@ def compare(conn: sqlite3.Connection, scope: str, paths: list[Path]) -> int:
             statuses.append(("NEW", path_string))
         elif previous["sha256"] != sha256:
             statuses.append(("CHANGED", path_string))
-        upsert(conn, scope, path_string, sha256, size, mtime_ns)
+        elif previous["size"] != size or previous["mtime_ns"] != mtime_ns:
+            upsert(conn, scope, path_string, sha256, size, mtime_ns)
+            updated_metadata = True
 
-    for path_string in sorted(set(existing) - set(current)):
-        statuses.append(("MISSING", path_string))
+    if report_missing_baseline_paths:
+        for path_string in sorted(set(existing) - set(current)):
+            statuses.append(("MISSING", path_string))
 
-    conn.commit()
+    if updated_metadata:
+        conn.commit()
 
     if not statuses:
         print("OK no checksum drift found")
@@ -175,7 +185,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="SQLite-backed SHA256 checksums for machete")
     parser.add_argument("--db", required=True)
     parser.add_argument("--scope", required=True)
-    parser.add_argument("--mode", choices=("init", "verify"), required=True)
+    parser.add_argument("--mode", choices=("init", "verify", "check"), required=True)
     parser.add_argument("--paths-file")
     parser.add_argument("--home")
     args = parser.parse_args()
@@ -191,7 +201,12 @@ def main() -> int:
     try:
         if args.mode == "init":
             return init_baseline(conn, args.scope, paths)
-        return compare(conn, scope=args.scope, paths=paths)
+        return compare(
+            conn,
+            scope=args.scope,
+            paths=paths,
+            report_missing_baseline_paths=args.mode == "verify",
+        )
     finally:
         conn.close()
 

@@ -11,6 +11,8 @@ source "${REPO_DIR}/scripts/lib/global-packages.sh"
 source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
 
 EXIT_CODE=0
+CHECKSUM_DB="${MACHETE_CHECKSUM_DB:-${HOME}/.machete/checksums.sqlite}"
+CHECKSUM_SCOPE="profile:${MACHETE_PROFILE}:tracked"
 
 header() { echo ""; echo "==> $*"; }
 ok()     { echo "  [ok] $*"; }
@@ -26,6 +28,55 @@ hash_file() {
     sha256sum "$path" | awk '{print $1}'
   else
     cksum "$path" | awk '{print $1}'
+  fi
+}
+
+python_bin() {
+  if command -v python3 >/dev/null 2>&1; then
+    command -v python3
+  elif command -v python >/dev/null 2>&1; then
+    command -v python
+  else
+    return 1
+  fi
+}
+
+checksum_status() {
+  local path="$1"
+  local tmp_file
+  local output
+  local status
+  local python
+
+  if [[ ! -f "${CHECKSUM_DB}" ]]; then
+    echo "NO_BASELINE"
+    return 0
+  fi
+
+  if ! python="$(python_bin)"; then
+    echo "NO_PYTHON"
+    return 0
+  fi
+
+  tmp_file="$(mktemp "${TMPDIR:-/tmp}/machete-doctor-checksum.XXXXXX")"
+  printf '%s\0' "$(dotfile_canonical_path "${path}")" > "${tmp_file}"
+  output="$("${python}" "${REPO_DIR}/scripts/cksum.py" \
+    --db "${CHECKSUM_DB}" \
+    --scope "${CHECKSUM_SCOPE}" \
+    --mode check \
+    --paths-file "${tmp_file}" 2>/dev/null)" && status=0 || status=$?
+  rm -f "${tmp_file}"
+
+  if [[ "${status}" -eq 0 ]]; then
+    echo "OK"
+  elif [[ "${output}" == NEW* ]]; then
+    echo "NO_BASELINE"
+  elif [[ "${output}" == CHANGED* ]]; then
+    echo "CHANGED"
+  elif [[ "${output}" == MISSING* ]]; then
+    echo "MISSING"
+  else
+    echo "UNKNOWN"
   fi
 }
 
@@ -180,7 +231,14 @@ if [[ -d "${DOTFILES_DIR}" ]]; then
       fi
 
       if [[ "$(dotfile_canonical_path "${target}")" == "$(dotfile_canonical_path "${src}")" ]]; then
-        ok "${rel}: symlinked correctly"
+        checksum_state="$(checksum_status "${dst}")"
+        case "${checksum_state}" in
+          OK) ok "${rel}: symlinked correctly (hash match)" ;;
+          CHANGED) warn "${rel}: symlinked correctly (CONTENT DRIFT — run: ./machete diff ${rel})" ;;
+          NO_BASELINE) info "${rel}: symlinked correctly (no checksum baseline — run: ./machete verify --init)" ;;
+          NO_PYTHON) info "${rel}: symlinked correctly (checksum skipped; Python 3 not found)" ;;
+          *) info "${rel}: symlinked correctly (checksum skipped)" ;;
+        esac
       else
         warn "${rel}: symlink points elsewhere -> ${target}"
       fi

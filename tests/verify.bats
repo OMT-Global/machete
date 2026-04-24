@@ -48,6 +48,11 @@ teardown() {
   assert_failure
   assert_output_contains "CHANGED ${home_zshrc}"
   assert_output_contains "MISSING ${repo_brewfile}"
+
+  run "${TEST_REPO}/machete" verify
+  assert_failure
+  assert_output_contains "CHANGED ${home_zshrc}"
+  assert_output_contains "MISSING ${repo_brewfile}"
 }
 
 @test "verify uses the persisted active profile" {
