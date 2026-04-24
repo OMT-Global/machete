@@ -83,9 +83,44 @@ require_section() {
   fi
 }
 
-if ! grep -Eiq '(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?)[[:space:]]+#[0-9]+' <<<"$body"; then
-  add_failure "PR body must link a governing issue with Closes/Fixes/Resolves/Refs #number."
-fi
+has_issue_link() {
+  grep -Eiq '(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?)[[:space:]]+#[0-9]+' <<<"$body"
+}
+
+uses_structured_template() {
+  local section
+
+  for section in "${required_sections[@]}"; do
+    if grep -Eq "^##[[:space:]]+${section//\//\\/}[[:space:]]*$" <<<"$body"; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+has_legacy_summary() {
+  local filtered
+
+  filtered="$(
+    awk '
+      {
+        line=$0
+        sub(/\r$/, "", line)
+
+        lowered = tolower(line)
+
+        if (lowered ~ /^(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?)[[:space:]]+#[0-9]+[[:space:]]*$/) {
+          next
+        }
+
+        print line
+      }
+    ' <<<"$body"
+  )"
+
+  has_meaningful_content "$filtered"
+}
 
 required_sections=(
   "Governing Issue"
@@ -97,12 +132,20 @@ required_sections=(
   "Agent Ownership"
 )
 
-for section in "${required_sections[@]}"; do
-  require_section "$section"
-done
+if ! has_issue_link; then
+  add_failure "PR body must link a governing issue with Closes/Fixes/Resolves/Refs #number."
+fi
 
-if grep -Eq '^[[:space:]]*[-*][[:space:]]+\[[[:space:]]\][[:space:]]+' <<<"$body"; then
-  add_failure "PR body contains unchecked required checklist items."
+if uses_structured_template; then
+  for section in "${required_sections[@]}"; do
+    require_section "$section"
+  done
+
+  if grep -Eq '^[[:space:]]*[-*][[:space:]]+\[[[:space:]]\][[:space:]]+' <<<"$body"; then
+    add_failure "PR body contains unchecked required checklist items."
+  fi
+elif ! has_legacy_summary; then
+  add_failure "Legacy PR body must include a non-placeholder summary in addition to the governing issue link."
 fi
 
 if [[ "${#failures[@]}" -gt 0 ]]; then
