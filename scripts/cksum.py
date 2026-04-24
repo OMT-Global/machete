@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import argparse
+import csv
+import datetime as dt
 import hashlib
 import os
 import sqlite3
@@ -53,11 +55,16 @@ def stat_record(path: Path) -> tuple[int, int]:
 
 def load_existing(conn: sqlite3.Connection, scope: str) -> dict[str, dict[str, object]]:
     rows = conn.execute(
-        "SELECT path, sha256, size, mtime_ns FROM checksums WHERE scope = ?",
+        "SELECT path, sha256, size, mtime_ns, last_hashed FROM checksums WHERE scope = ?",
         (scope,),
     ).fetchall()
     return {
-        row[0]: {"sha256": row[1], "size": row[2], "mtime_ns": row[3]}
+        row[0]: {
+            "sha256": row[1],
+            "size": row[2],
+            "mtime_ns": row[3],
+            "last_hashed": row[4],
+        }
         for row in rows
     }
 
@@ -105,9 +112,12 @@ def should_skip_home_path(home: Path, path: Path) -> bool:
     return any(part in EXCLUDED_DIR_NAMES for part in parts)
 
 
-def walk_home(home: Path) -> list[Path]:
+def walk_home(home: Path, scan_root: Path | None = None) -> list[Path]:
+    if scan_root is None:
+        scan_root = home
+
     paths = []
-    for root, dirs, files in os.walk(home):
+    for root, dirs, files in os.walk(scan_root):
         root_path = Path(root)
         dirs[:] = [
             directory
@@ -119,6 +129,115 @@ def walk_home(home: Path) -> list[Path]:
             if not should_skip_home_path(home, path) and path.is_file():
                 paths.append(path)
     return sorted(paths)
+
+
+def parse_since(value: str | None) -> float | None:
+    if not value:
+        return None
+    try:
+        parsed = dt.datetime.strptime(value, "%Y-%m-%d")
+    except ValueError as exc:
+        raise SystemExit(f"invalid --since date '{value}'; expected YYYY-MM-DD") from exc
+    return parsed.replace(tzinfo=dt.timezone.utc).timestamp()
+
+
+def format_timestamp(timestamp: float | None) -> str:
+    if timestamp is None:
+        return ""
+    return dt.datetime.fromtimestamp(timestamp, tz=dt.timezone.utc).isoformat()
+
+
+def should_include_status(
+    status: str,
+    path: Path | None,
+    previous: dict[str, object] | None,
+    since_ts: float | None,
+) -> bool:
+    if since_ts is None:
+        return True
+    if status == "MISSING":
+        return previous is not None and float(previous["last_hashed"]) >= since_ts
+    if path is None or not path.exists():
+        return False
+    return path.stat().st_mtime >= since_ts
+
+
+def audit(
+    conn: sqlite3.Connection,
+    scope: str,
+    paths: list[Path],
+    compare_root: Path,
+    export_path: Path | None,
+    since_ts: float | None,
+) -> int:
+    existing = load_existing(conn, scope)
+    if not existing:
+        print("No audit baseline found. Building one now...")
+        return init_baseline(conn, scope, paths)
+
+    current = {str(path): path for path in paths}
+    compare_root_string = str(compare_root)
+    grouped: dict[str, list[tuple[str, int, float | None]]] = {
+        "NEW": [],
+        "CHANGED": [],
+        "MISSING": [],
+    }
+    updated_metadata = False
+
+    for path_string, path in sorted(current.items()):
+        if not path.exists() or not path.is_file():
+            continue
+
+        previous = existing.get(path_string)
+        sha256, size, mtime_ns = checksum_for(path, previous)
+        status = None
+
+        if previous is None:
+            status = "NEW"
+        elif previous["sha256"] != sha256:
+            status = "CHANGED"
+        elif previous["size"] != size or previous["mtime_ns"] != mtime_ns:
+            upsert(conn, scope, path_string, sha256, size, mtime_ns)
+            updated_metadata = True
+
+        if status and should_include_status(status, path, previous, since_ts):
+            last_hashed = None if previous is None else float(previous["last_hashed"])
+            grouped[status].append((path_string, size, last_hashed))
+
+    for path_string in sorted(set(existing) - set(current)):
+        if path_string != compare_root_string and not path_string.startswith(f"{compare_root_string}{os.sep}"):
+            continue
+        previous = existing[path_string]
+        if should_include_status("MISSING", None, previous, since_ts):
+            grouped["MISSING"].append(
+                (path_string, int(previous["size"]), float(previous["last_hashed"]))
+            )
+
+    if updated_metadata:
+        conn.commit()
+
+    if export_path is not None:
+        export_path.parent.mkdir(parents=True, exist_ok=True)
+        with export_path.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.writer(handle)
+            writer.writerow(("path", "status", "size", "last_hashed"))
+            for status in ("NEW", "CHANGED", "MISSING"):
+                for path_string, size, last_hashed in grouped[status]:
+                    writer.writerow((path_string, status, size, format_timestamp(last_hashed)))
+
+    if not any(grouped.values()):
+        print("OK no audit drift found")
+        return 0
+
+    for status in ("NEW", "CHANGED", "MISSING"):
+        entries = grouped[status]
+        if not entries:
+            continue
+        print(f"{status} FILES")
+        for path_string, _, _ in entries:
+            print(f"  {path_string}")
+        print("")
+    return 1
 
 
 def compare(
@@ -168,14 +287,22 @@ def compare(
 def init_baseline(conn: sqlite3.Connection, scope: str, paths: list[Path]) -> int:
     existing = load_existing(conn, scope)
     count = 0
+    seen_paths: set[str] = set()
     for path in paths:
         if not path.exists() or not path.is_file():
             continue
         path_string = str(path)
+        seen_paths.add(path_string)
         sha256, size, mtime_ns = checksum_for(path, existing.get(path_string))
         upsert(conn, scope, path_string, sha256, size, mtime_ns)
         count += 1
 
+    conn.execute(
+        "DELETE FROM checksums WHERE scope = ? AND path NOT IN ({})".format(
+            ",".join("?" for _ in seen_paths) or "''"
+        ),
+        (scope, *sorted(seen_paths)),
+    )
     conn.commit()
     print(f"Baseline updated for {count} file(s)")
     return 0
@@ -185,15 +312,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="SQLite-backed SHA256 checksums for machete")
     parser.add_argument("--db", required=True)
     parser.add_argument("--scope", required=True)
-    parser.add_argument("--mode", choices=("init", "verify", "check"), required=True)
+    parser.add_argument("--mode", choices=("init", "verify", "check", "audit"), required=True)
     parser.add_argument("--paths-file")
     parser.add_argument("--home")
+    parser.add_argument("--dir")
+    parser.add_argument("--since")
+    parser.add_argument("--export")
     args = parser.parse_args()
 
     if args.paths_file:
         paths = read_tracked_paths(Path(args.paths_file))
     elif args.home:
-        paths = walk_home(Path(args.home))
+        home = Path(args.home)
+        scan_root = Path(args.dir).expanduser() if args.dir else home
+        paths = walk_home(home, scan_root)
     else:
         parser.error("one of --paths-file or --home is required")
 
@@ -201,6 +333,15 @@ def main() -> int:
     try:
         if args.mode == "init":
             return init_baseline(conn, args.scope, paths)
+        if args.mode == "audit":
+            return audit(
+                conn,
+                scope=args.scope,
+                paths=paths,
+                compare_root=scan_root,
+                export_path=Path(args.export).expanduser() if args.export else None,
+                since_ts=parse_since(args.since),
+            )
         return compare(
             conn,
             scope=args.scope,

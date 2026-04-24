@@ -15,6 +15,7 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ./machete history    List rollback snapshot tags, newest first
 ./machete rollback   Restore the latest snapshot tag and re-apply setup
 ./machete verify     Hash tracked files and compare them to the checksum baseline
+./machete audit      Scan $HOME and report new, changed, or missing files since the last snapshot baseline
 ./machete update     Upgrade all Homebrew packages and clean up
 ./machete doctor     Check what's installed, symlinked, and in sync for the active profile
 ./machete diff       Compare tracked dotfiles and Brewfile for the active profile
@@ -74,6 +75,7 @@ cd machete
 ./machete diff       # compare live state before snapshotting
 ./machete verify --init  # record a checksum baseline
 ./machete verify     # check tracked files against that baseline
+./machete audit      # full-home drift report since the last snapshot baseline
 ./machete doctor --profile work
 ./machete services   # start saved Homebrew services
 ./machete update     # upgrade all packages
@@ -85,6 +87,8 @@ cd machete
 ```
 
 `./machete verify --init` records SHA256 checksums for the active profile's tracked dotfiles and Brewfile in `~/.machete/checksums.sqlite`. Later `./machete verify` runs report `NEW`, `CHANGED`, or `MISSING` files and exit non-zero when drift is found. Use `./machete verify --full --init` and `./machete verify --full` for a broader `$HOME` scan.
+
+`./machete snapshot` also refreshes a full-home audit baseline in the background. `./machete audit` compares the current filesystem against that baseline, groups output into `NEW FILES`, `CHANGED FILES`, and `MISSING FILES`, and exits non-zero when drift is found. Use `--dir` to limit the report to a subtree, `--since YYYY-MM-DD` to filter recent changes, and `--export report.csv` to write CSV output.
 
 To restore a specific snapshot, pass its tag:
 
@@ -130,6 +134,7 @@ machete/
     rollback.sh            # internals for ./machete rollback
     update.sh              # internals for ./machete update
     doctor.sh              # internals for ./machete doctor
+    audit.sh               # internals for ./machete audit
     diff.sh                # internals for ./machete diff
     sync.sh                # internals for ./machete sync
 ```
