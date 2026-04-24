@@ -64,3 +64,17 @@ SERVICES
 
   diff -u "${TEST_ROOT}/first.sha" "${TEST_ROOT}/second.sha"
 }
+
+@test "snapshot --profile writes machine state under the named profile and persists it" {
+  prepare_snapshot_inputs
+
+  run "${TEST_REPO}/machete" snapshot --profile work
+
+  assert_success
+  [[ -f "${TEST_REPO}/profiles/work/Brewfile" ]]
+  [[ -f "${TEST_REPO}/profiles/work/defaults/brew-services.txt" ]]
+  [[ -f "${TEST_REPO}/profiles/work/dotfiles/.zshrc" ]]
+  [[ -x "${TEST_REPO}/profiles/work/defaults/macos-defaults.sh" ]]
+  [[ "$(cat "${TEST_REPO}/.machete/active-profile")" == "work" ]]
+  [[ ! -f "${TEST_REPO}/Brewfile" ]]
+}

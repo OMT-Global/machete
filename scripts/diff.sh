@@ -2,6 +2,9 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${REPO_DIR}/scripts/lib/profiles.sh"
+MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
+DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brewfile.sh"
 
 usage() {
@@ -52,7 +55,7 @@ show_header() {
 
 diff_dotfile() {
   local relative_path="$1"
-  local repo_file="${REPO_DIR}/dotfiles/${relative_path}"
+  local repo_file="${DOTFILES_DIR}/${relative_path}"
   local home_file="${HOME}/${relative_path}"
 
   if [[ ! -f "${repo_file}" ]]; then
@@ -76,9 +79,17 @@ diff_dotfile() {
 }
 
 diff_brewfile() {
-  local brewfile_path="${REPO_DIR}/Brewfile"
+  local brewfile_path
+  brewfile_path="$(profile_brewfile_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
   local tmp_dump
   tmp_dump="$(mktemp "${TMPDIR:-/tmp}/machete-brewfile.diff.XXXXXX")"
+
+  if [[ ! -f "${brewfile_path}" ]]; then
+    echo "  [!] Brewfile not found for profile '${MACHETE_PROFILE}'"
+    EXIT_CODE=1
+    rm -f "${tmp_dump}"
+    return
+  fi
 
   if ! command -v brew >/dev/null 2>&1; then
     echo "  [!] brew not found; cannot compare Brewfile"
@@ -100,10 +111,12 @@ diff_brewfile() {
 
 if [[ "${#PATHS[@]}" -eq 0 && "${DO_BREW}" -eq 0 ]]; then
   show_header "Dotfiles"
-  while IFS= read -r tracked_file; do
-    relative_path="${tracked_file#${REPO_DIR}/dotfiles/}"
-    diff_dotfile "${relative_path}"
-  done < <(find "${REPO_DIR}/dotfiles" -type f ! -name '.gitkeep' | sort)
+  if [[ -d "${DOTFILES_DIR}" ]]; then
+    while IFS= read -r tracked_file; do
+      relative_path="${tracked_file#${DOTFILES_DIR}/}"
+      diff_dotfile "${relative_path}"
+    done < <(find "${DOTFILES_DIR}" -type f ! -name '.gitkeep' | sort)
+  fi
 
   show_header "Brewfile"
   diff_brewfile
@@ -125,7 +138,7 @@ else
           diff_dotfile "${path}"
           ;;
         *)
-          if [[ -f "${REPO_DIR}/dotfiles/${path}" ]]; then
+          if [[ -f "${DOTFILES_DIR}/${path}" ]]; then
             show_header "${path}"
             diff_dotfile "${path}"
           else

@@ -2,6 +2,8 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${REPO_DIR}/scripts/lib/profiles.sh"
+MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
 source "${REPO_DIR}/scripts/lib/snapshot-tags.sh"
 
 echo "==> Creating rollback snapshot"
@@ -34,4 +36,4 @@ if [[ "${STASHED}" -eq 1 ]]; then
 fi
 
 echo "==> Re-applying setup"
-MACHETE_SKIP_SNAPSHOT_TAG=1 "${REPO_DIR}/scripts/setup.sh"
+MACHETE_SKIP_SNAPSHOT_TAG=1 MACHETE_PROFILE="${MACHETE_PROFILE}" "${REPO_DIR}/scripts/setup.sh"

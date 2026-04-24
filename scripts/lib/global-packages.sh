@@ -1,26 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PACKAGES_DIR_DEFAULT_REL="packages"
+if ! declare -F profile_packages_dir >/dev/null 2>&1; then
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/profiles.sh"
+fi
 
 packages_dir() {
   local repo_dir="$1"
-  printf '%s/%s\n' "${repo_dir}" "${PACKAGES_DIR_DEFAULT_REL}"
+  local profile_name="${2:-${MACHETE_PROFILE:-default}}"
+  profile_packages_dir "${repo_dir}" "${profile_name}"
 }
 
 npm_packages_file() {
   local repo_dir="$1"
-  printf '%s/npm-global.txt\n' "$(packages_dir "${repo_dir}")"
+  local profile_name="${2:-${MACHETE_PROFILE:-default}}"
+  printf '%s/npm-global.txt\n' "$(packages_dir "${repo_dir}" "${profile_name}")"
 }
 
 pip_packages_file() {
   local repo_dir="$1"
-  printf '%s/pip-global.txt\n' "$(packages_dir "${repo_dir}")"
+  local profile_name="${2:-${MACHETE_PROFILE:-default}}"
+  printf '%s/pip-global.txt\n' "$(packages_dir "${repo_dir}" "${profile_name}")"
 }
 
 cargo_packages_file() {
   local repo_dir="$1"
-  printf '%s/cargo-global.txt\n' "$(packages_dir "${repo_dir}")"
+  local profile_name="${2:-${MACHETE_PROFILE:-default}}"
+  printf '%s/cargo-global.txt\n' "$(packages_dir "${repo_dir}" "${profile_name}")"
 }
 
 write_list_file() {

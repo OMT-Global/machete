@@ -2,7 +2,9 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DOTFILES_DIR="${REPO_DIR}/dotfiles"
+source "${REPO_DIR}/scripts/lib/profiles.sh"
+MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
+DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
 source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
@@ -43,11 +45,12 @@ canonical_file_path() {
 
 # --- Homebrew health ---
 header "Homebrew"
+BREWFILE_PATH="$(profile_brewfile_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
 if command -v brew >/dev/null 2>&1; then
   ok "brew found at $(command -v brew)"
 
-  if [[ -f "${REPO_DIR}/Brewfile" ]]; then
-    if brew bundle check --file="${REPO_DIR}/Brewfile" --no-upgrade >/dev/null 2>&1; then
+  if [[ -f "${BREWFILE_PATH}" ]]; then
+    if brew bundle check --file="${BREWFILE_PATH}" --no-upgrade >/dev/null 2>&1; then
       ok "All Brewfile entries installed"
     else
       warn "Brewfile drift detected — run: ./machete setup"
@@ -215,14 +218,14 @@ fi
 
 # --- macOS defaults ---
 header "macOS defaults"
-DEFAULTS_SCRIPT="${REPO_DIR}/defaults/macos-defaults.sh"
+DEFAULTS_SCRIPT="$(profile_defaults_script_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
 if [[ -f "${DEFAULTS_SCRIPT}" ]]; then
   ok "defaults/macos-defaults.sh exists"
   if [[ ! -x "${DEFAULTS_SCRIPT}" ]]; then
     warn "defaults/macos-defaults.sh is not executable — run: chmod +x ${DEFAULTS_SCRIPT}"
   fi
 else
-  info "No defaults/macos-defaults.sh — run: ./machete snapshot to create template"
+  info "No macOS defaults template for profile '${MACHETE_PROFILE}' — run: ./machete snapshot to create one"
 fi
 
 # --- Git status ---

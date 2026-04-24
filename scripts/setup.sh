@@ -2,7 +2,9 @@
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DOTFILES_DIR="${REPO_DIR}/dotfiles"
+source "${REPO_DIR}/scripts/lib/profiles.sh"
+MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
+DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
 source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
@@ -57,14 +59,15 @@ if ! command -v brew >/dev/null 2>&1; then
 fi
 
 echo "==> Installing Brew packages from Brewfile"
-if [[ -f "${REPO_DIR}/Brewfile" ]]; then
-  if brew bundle check --file="${REPO_DIR}/Brewfile" --no-upgrade >/dev/null 2>&1; then
+Brewfile_PATH="$(profile_brewfile_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
+if [[ -f "${Brewfile_PATH}" ]]; then
+  if brew bundle check --file="${Brewfile_PATH}" --no-upgrade >/dev/null 2>&1; then
     echo "Brewfile already satisfied."
   else
-    brew bundle install --file="${REPO_DIR}/Brewfile"
+    brew bundle install --file="${Brewfile_PATH}"
   fi
 else
-  echo "No Brewfile found in ${REPO_DIR}; skipping brew bundle."
+  echo "No Brewfile found for profile '${MACHETE_PROFILE}'; skipping brew bundle."
 fi
 
 echo "==> Restoring global packages"
@@ -98,11 +101,11 @@ brew_services_restore "$(brew_services_state_file)"
 editor_extensions_restore "$(editor_extensions_file)"
 
 echo "==> Applying macOS defaults"
-DEFAULTS_SCRIPT="${REPO_DIR}/defaults/macos-defaults.sh"
+DEFAULTS_SCRIPT="$(profile_defaults_script_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
 if [[ -x "${DEFAULTS_SCRIPT}" ]]; then
   "${DEFAULTS_SCRIPT}"
 else
-  echo "No defaults/macos-defaults.sh found or not executable; skipping."
+  echo "No macOS defaults script found for profile '${MACHETE_PROFILE}'; skipping."
 fi
 
 echo ""

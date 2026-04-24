@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
+if ! declare -F profile_editor_extensions_file >/dev/null 2>&1; then
+  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/profiles.sh"
+fi
+
 editor_extensions_file() {
-  echo "${REPO_DIR}/packages/vscode-extensions.txt"
+  local profile_name="${MACHETE_PROFILE:-default}"
+  echo "$(profile_editor_extensions_file "${REPO_DIR}" "${profile_name}")"
 }
 
 editor_extensions_find_bin() {

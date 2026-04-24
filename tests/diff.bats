@@ -50,3 +50,17 @@ BREW_DUMP
   assert_output_contains "Brewfile: matches current brew bundle dump"
   assert_output_contains "No differences found."
 }
+
+@test "diff uses the persisted active profile when no --profile flag is passed" {
+  mkdir -p "${TEST_REPO}/profiles/work/dotfiles/.ssh" "${HOME}/.ssh"
+  echo "Host work-example" > "${TEST_REPO}/profiles/work/dotfiles/.ssh/config"
+  cp "${TEST_REPO}/profiles/work/dotfiles/.ssh/config" "${HOME}/.ssh/config"
+
+  run "${TEST_REPO}/machete" help --profile work
+  assert_success
+
+  run "${TEST_REPO}/machete" diff .ssh/config
+
+  assert_success
+  assert_output_contains ".ssh/config: matches"
+}
