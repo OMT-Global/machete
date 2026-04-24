@@ -66,6 +66,18 @@ dotfile_home_path() {
   printf '%s/%s\n' "${HOME}" "${relative_path}"
 }
 
+dotfile_resolve_symlink_target() {
+  local link_path="$1"
+  local target
+
+  target="$(readlink "${link_path}")"
+  if [[ "${target}" != /* ]]; then
+    target="$(dirname "${link_path}")/${target}"
+  fi
+
+  printf '%s\n' "${target}"
+}
+
 dotfile_canonical_path() {
   local path="$1"
   local dir
@@ -79,6 +91,23 @@ dotfile_canonical_path() {
   else
     printf '%s\n' "${path}"
   fi
+}
+
+dotfile_paths_match() {
+  local left_path="$1"
+  local right_path="$2"
+
+  [[ "$(dotfile_canonical_path "${left_path}")" == "$(dotfile_canonical_path "${right_path}")" ]]
+}
+
+dotfile_symlink_points_to_path() {
+  local link_path="$1"
+  local expected_path="$2"
+  local target_path
+
+  [[ -L "${link_path}" ]] || return 1
+  target_path="$(dotfile_resolve_symlink_target "${link_path}")"
+  dotfile_paths_match "${target_path}" "${expected_path}"
 }
 
 copy_home_dotfile_to_repo() {

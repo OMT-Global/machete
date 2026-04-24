@@ -223,14 +223,9 @@ if [[ -d "${DOTFILES_DIR}" ]]; then
     FOUND=$((FOUND + 1))
 
     if [[ ! -e "${dst}" ]]; then
-      warn "${rel}: missing from home directory (not symlinked)"
+      info "${rel}: absent from home directory"
     elif [[ -L "${dst}" ]]; then
-      target="$(readlink "${dst}")"
-      if [[ "${target}" != /* ]]; then
-        target="$(dirname "${dst}")/${target}"
-      fi
-
-      if [[ "$(dotfile_canonical_path "${target}")" == "$(dotfile_canonical_path "${src}")" ]]; then
+      if dotfile_symlink_points_to_path "${dst}" "${src}"; then
         checksum_state="$(checksum_status "${dst}")"
         case "${checksum_state}" in
           OK) ok "${rel}: symlinked correctly (hash match)" ;;
@@ -240,16 +235,11 @@ if [[ -d "${DOTFILES_DIR}" ]]; then
           *) info "${rel}: symlinked correctly (checksum skipped)" ;;
         esac
       else
+        target="$(dotfile_resolve_symlink_target "${dst}")"
         warn "${rel}: symlink points elsewhere -> ${target}"
       fi
     else
-      src_hash="$(hash_file "${src}")"
-      dst_hash="$(hash_file "${dst}")"
-      if [[ "${src_hash}" == "${dst_hash}" ]]; then
-        info "${rel}: content matches but file is not symlinked"
-      else
-        warn "${rel}: content differs from repo — run: ./machete diff ${rel}"
-      fi
+      info "${rel}: present as a regular file (not symlinked)"
     fi
   done < <(dotfiles_list "${DOTFILES_DIR}")
 

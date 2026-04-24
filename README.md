@@ -11,6 +11,7 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
 ./machete snapshot   Export current state to the active profile or --profile target
 ./machete track      Add one or more home-directory files to dotfiles/ and symlink them back into $HOME
 ./machete untrack    Remove one or more files from dotfiles/ and stop managing them
+./machete uninstall  Dry-run or apply a reversible teardown of machete-managed home dotfile symlinks
 ./machete services   Start Homebrew services listed in defaults/brew-services.txt
 ./machete history    List rollback snapshot tags, newest first
 ./machete rollback   Restore the latest snapshot tag and re-apply setup
@@ -170,6 +171,8 @@ To start tracking a new file, run `./machete track PATH`. This copies `~/PATH` i
 
 To stop tracking a file, run `./machete untrack PATH`. If the home file is still symlinked to the repo copy, machete converts it back into a regular file before removing `dotfiles/PATH`.
 
+To undo the machine-local dotfile install without touching the repo copy, run `./machete uninstall --dotfiles` for a dry run, then `./machete uninstall --dotfiles --apply` to remove repo-managed symlinks and restore the newest `<file>.bak.<timestamp>` backup when one exists.
+
 `./machete snapshot` refreshes whatever is already tracked under `dotfiles/`. On a brand-new repo with no tracked dotfiles yet, it still seeds the default starter set (`.zshrc`, `.zprofile`, `.gitconfig`, `.gitignore_global`, `.vimrc`, `.ssh/config`) when those files exist.
 
 Before publishing or sharing a machete repo, template personal identity fields in dotfiles such as `.gitconfig` and remove shell snippets that load local API tokens from the keychain or environment.
@@ -209,6 +212,7 @@ When that file exists, `./machete setup` installs each saved extension with the 
 - **Homebrew not found after install**: ensure `/opt/homebrew/bin` (Apple Silicon) or `/usr/local/bin` (Intel) is in your `PATH`
 - **Permission denied**: `chmod +x machete`
 - **Symlink conflicts**: `./machete setup` backs up existing files to `<file>.bak` before symlinking
+- **Back out a setup run**: `./machete uninstall --dotfiles` shows which repo-managed symlinks would be removed; add `--apply` to perform the teardown. It does not uninstall Homebrew packages, clear caches, or restore shell history.
 
 ## Privacy
 
