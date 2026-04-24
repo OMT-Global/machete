@@ -21,11 +21,21 @@ teardown() {
   run "${TEST_REPO}/machete" help --profile work
 
   assert_success
-  [[ "$(cat "${TEST_REPO}/.machete/active-profile")" == "work" ]]
+  [[ "$(cat "${HOME}/.machete/profile")" == "work" ]]
 
   run "${TEST_REPO}/machete" profile list
 
   assert_success
   assert_output_contains "* work"
   assert_output_contains "  default"
+}
+
+@test "commands fall back to default when the persisted global profile is unknown in this repo" {
+  mkdir -p "${HOME}/.machete"
+  echo "work" > "${HOME}/.machete/profile"
+
+  run "${TEST_REPO}/machete" profile list
+
+  assert_success
+  assert_output_contains "* default"
 }
