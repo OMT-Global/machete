@@ -1,4 +1,4 @@
-    #!/usr/bin/env bash
+#!/usr/bin/env bash
     set -euo pipefail
 
     mode="${1:-"--all-files"}"
@@ -16,13 +16,15 @@
     fi
 
     should_skip_file() {
-      local candidate="$1"
-      local ignore_glob
-      for ignore_glob in "${ignore_globs[@]}"; do
-        case "$candidate" in
-          $ignore_glob)
-            return 0
-            ;;
+  local candidate="$1"
+  local ignore_glob
+  for ignore_glob in "${ignore_globs[@]}"; do
+    # Ignore entries are intentionally glob patterns.
+    # shellcheck disable=SC2254
+    case "$candidate" in
+      $ignore_glob)
+        return 0
+        ;;
         esac
       done
       return 1

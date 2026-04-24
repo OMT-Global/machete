@@ -82,19 +82,29 @@ fi
 MACHETE_PROFILE="$(resolve_profile "${REPO_DIR}" "${EXPLICIT_PROFILE}")"
 export MACHETE_PROFILE
 
+exec_script() {
+  local script="$1"
+
+  if [[ "${#ARGS[@]}" -gt 0 ]]; then
+    exec "${script}" "${ARGS[@]}"
+  fi
+
+  exec "${script}"
+}
+
 case "${CMD}" in
-  setup)    exec "${SCRIPTS_DIR}/setup.sh" "${ARGS[@]}" ;;
-  snapshot) exec "${SCRIPTS_DIR}/snapshot.sh" "${ARGS[@]}" ;;
-  track)    exec "${SCRIPTS_DIR}/track.sh" "${ARGS[@]}" ;;
-  untrack)  exec "${SCRIPTS_DIR}/untrack.sh" "${ARGS[@]}" ;;
-  services) exec "${SCRIPTS_DIR}/services.sh" "${ARGS[@]}" ;;
-  history)  exec "${SCRIPTS_DIR}/history.sh" "${ARGS[@]}" ;;
-  rollback) exec "${SCRIPTS_DIR}/rollback.sh" "${ARGS[@]}" ;;
-  update)   exec "${SCRIPTS_DIR}/update.sh" "${ARGS[@]}" ;;
-  doctor)   exec "${SCRIPTS_DIR}/doctor.sh" "${ARGS[@]}" ;;
-  diff)     exec "${SCRIPTS_DIR}/diff.sh" "${ARGS[@]}" ;;
-  sync)     exec "${SCRIPTS_DIR}/sync.sh" "${ARGS[@]}" ;;
-  profile)  exec "${SCRIPTS_DIR}/profile.sh" "${ARGS[@]}" ;;
+  setup)    exec_script "${SCRIPTS_DIR}/setup.sh" ;;
+  snapshot) exec_script "${SCRIPTS_DIR}/snapshot.sh" ;;
+  track)    exec_script "${SCRIPTS_DIR}/track.sh" ;;
+  untrack)  exec_script "${SCRIPTS_DIR}/untrack.sh" ;;
+  services) exec_script "${SCRIPTS_DIR}/services.sh" ;;
+  history)  exec_script "${SCRIPTS_DIR}/history.sh" ;;
+  rollback) exec_script "${SCRIPTS_DIR}/rollback.sh" ;;
+  update)   exec_script "${SCRIPTS_DIR}/update.sh" ;;
+  doctor)   exec_script "${SCRIPTS_DIR}/doctor.sh" ;;
+  diff)     exec_script "${SCRIPTS_DIR}/diff.sh" ;;
+  sync)     exec_script "${SCRIPTS_DIR}/sync.sh" ;;
+  profile)  exec_script "${SCRIPTS_DIR}/profile.sh" ;;
   defaults)
     DEFAULTS_SCRIPT="$(profile_defaults_script_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
     if [[ "${ARGS[0]:-}" == "--init" ]]; then

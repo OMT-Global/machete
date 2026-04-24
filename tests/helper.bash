@@ -18,6 +18,7 @@ setup_test_repo() {
   git -C "${TEST_REPO}" init --quiet
   git -C "${TEST_REPO}" config user.email "machete-tests@example.invalid"
   git -C "${TEST_REPO}" config user.name "machete tests"
+  git -C "${TEST_REPO}" config commit.gpgsign false
   git -C "${TEST_REPO}" add .
   git -C "${TEST_REPO}" commit --quiet -m "initial fixture"
 
