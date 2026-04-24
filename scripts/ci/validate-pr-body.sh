@@ -19,6 +19,8 @@ add_failure() {
   failures+=("$1")
 }
 
+issue_reference_pattern='(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?)[[:space:]]+#[0-9]+'
+
 has_meaningful_content() {
   local content="$1"
 
@@ -48,6 +50,19 @@ has_meaningful_content() {
       exit found ? 0 : 1
     }
   ' <<<"$content"
+}
+
+uses_structured_template() {
+  grep -Eq '^##[[:space:]]+' <<<"$body"
+}
+
+legacy_summary_content() {
+  printf '%s\n' "$body" | perl -ne '
+    next if /^\s*$/;
+    next if /^\s*<!--/;
+    next if /^\s*(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?)\s+#\d+\s*$/i;
+    print;
+  '
 }
 
 section_content() {
@@ -83,7 +98,7 @@ require_section() {
   fi
 }
 
-if ! grep -Eiq '(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?)[[:space:]]+#[0-9]+' <<<"$body"; then
+if ! grep -Eiq "$issue_reference_pattern" <<<"$body"; then
   add_failure "PR body must link a governing issue with Closes/Fixes/Resolves/Refs #number."
 fi
 
@@ -97,9 +112,15 @@ required_sections=(
   "Agent Ownership"
 )
 
-for section in "${required_sections[@]}"; do
-  require_section "$section"
-done
+if uses_structured_template; then
+  for section in "${required_sections[@]}"; do
+    require_section "$section"
+  done
+else
+  if ! has_meaningful_content "$(legacy_summary_content)"; then
+    add_failure "PR body must include a meaningful summary in addition to the governing issue link."
+  fi
+fi
 
 if grep -Eq '^[[:space:]]*[-*][[:space:]]+\[[[:space:]]\][[:space:]]+' <<<"$body"; then
   add_failure "PR body contains unchecked required checklist items."
