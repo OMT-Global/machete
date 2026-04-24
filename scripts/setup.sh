@@ -6,6 +6,7 @@ source "${REPO_DIR}/scripts/lib/profiles.sh"
 MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
 DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
+source "${REPO_DIR}/scripts/lib/dotfiles.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
 source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
 source "${REPO_DIR}/scripts/lib/snapshot-tags.sh"
@@ -79,7 +80,7 @@ echo "==> Symlinking dotfiles"
 if [[ -d "${DOTFILES_DIR}" ]]; then
   while IFS= read -r src; do
     rel="${src#${DOTFILES_DIR}/}"
-    dst="${HOME}/${rel}"
+    dst="$(dotfile_home_path "${rel}")"
     mkdir -p "$(dirname "${dst}")"
 
     if [[ -e "${dst}" && ! -L "${dst}" ]]; then
@@ -90,7 +91,7 @@ if [[ -d "${DOTFILES_DIR}" ]]; then
 
     echo "  - Linking ${rel}"
     ln -sfn "${src}" "${dst}"
-  done < <(find "${DOTFILES_DIR}" -type f ! -name '.gitkeep' | sort)
+  done < <(dotfiles_list "${DOTFILES_DIR}")
 else
   echo "No dotfiles/ directory found; skipping symlinks."
 fi

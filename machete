@@ -16,6 +16,8 @@ Commands:
   setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
   snapshot   Export current state to repo: Brewfile, global packages, services, dotfiles, defaults template
              Use --with-extensions to also capture VS Code-compatible editor extensions
+  track      Add one or more home-directory files to dotfiles/ and symlink them back into $HOME
+  untrack    Remove one or more files from dotfiles/ and replace managed home symlinks with regular files
   services   Start Homebrew services listed in defaults/brew-services.txt
   history    List rollback snapshot tags, newest first
   rollback   Check out a snapshot tag and re-apply setup
@@ -33,6 +35,10 @@ Examples:
   ./machete doctor       # check current state for the active profile
   ./machete diff         # compare live state before snapshotting
   ./machete snapshot --profile work --with-extensions
+  ./machete snapshot     # capture what's on your Mac now
+  ./machete snapshot --with-extensions
+  ./machete track .config/ghostty/config
+  ./machete untrack .vimrc
   ./machete services     # restore saved Homebrew services
   ./machete history      # list rollback snapshots
   ./machete rollback     # restore the latest snapshot
@@ -79,6 +85,8 @@ export MACHETE_PROFILE
 case "${CMD}" in
   setup)    exec "${SCRIPTS_DIR}/setup.sh" "${ARGS[@]}" ;;
   snapshot) exec "${SCRIPTS_DIR}/snapshot.sh" "${ARGS[@]}" ;;
+  track)    exec "${SCRIPTS_DIR}/track.sh" "${ARGS[@]}" ;;
+  untrack)  exec "${SCRIPTS_DIR}/untrack.sh" "${ARGS[@]}" ;;
   services) exec "${SCRIPTS_DIR}/services.sh" "${ARGS[@]}" ;;
   history)  exec "${SCRIPTS_DIR}/history.sh" "${ARGS[@]}" ;;
   rollback) exec "${SCRIPTS_DIR}/rollback.sh" "${ARGS[@]}" ;;

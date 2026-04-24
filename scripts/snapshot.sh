@@ -7,6 +7,7 @@ MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
 DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brewfile.sh"
 source "${REPO_DIR}/scripts/lib/brew-services.sh"
+source "${REPO_DIR}/scripts/lib/dotfiles.sh"
 source "${REPO_DIR}/scripts/lib/global-packages.sh"
 source "${REPO_DIR}/scripts/lib/macos-defaults.sh"
 source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
@@ -79,16 +80,26 @@ fi
 
 echo "==> Copying dotfiles to ${DOTFILES_DIR}"
 mkdir -p "${DOTFILES_DIR}"
-DOTFILES=(.zshrc .zprofile .gitconfig .gitignore_global .vimrc .ssh/config)
-for f in "${DOTFILES[@]}"; do
-  src="${HOME}/${f}"
-  if [[ -f "${src}" ]]; then
-    dst_dir="${DOTFILES_DIR}/$(dirname "${f}")"
-    mkdir -p "${dst_dir}"
-    cp "${src}" "${DOTFILES_DIR}/${f}"
-    echo "  - ${f}"
-  fi
-done
+if dotfiles_has_tracked_files "${DOTFILES_DIR}"; then
+  while IFS= read -r tracked_file; do
+    relative_path="${tracked_file#${DOTFILES_DIR}/}"
+    source_path="$(dotfile_home_path "${relative_path}")"
+    if [[ -f "${source_path}" ]]; then
+      copy_home_dotfile_to_repo "${DOTFILES_DIR}" "${relative_path}"
+      echo "  - ${relative_path}"
+    else
+      echo "  - ${relative_path} (missing from home; kept repo copy)"
+    fi
+  done < <(dotfiles_list "${DOTFILES_DIR}")
+else
+  while IFS= read -r default_path; do
+    source_path="$(dotfile_home_path "${default_path}")"
+    if [[ -f "${source_path}" ]]; then
+      copy_home_dotfile_to_repo "${DOTFILES_DIR}" "${default_path}"
+      echo "  - ${default_path}"
+    fi
+  done < <(dotfiles_default_paths)
+fi
 
 echo "==> Ensuring defaults/macos-defaults.sh exists"
 DEFAULTS_SCRIPT="$(profile_defaults_script_path "${REPO_DIR}" "${MACHETE_PROFILE}")"

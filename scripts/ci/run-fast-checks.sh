@@ -5,6 +5,7 @@ source "${SCRIPT_DIR}/lib/bats.sh"
 
 echo "Generic archetype selected."
 bash tests/ci-bats-fallback.sh
+bash tests/validate-pr-body.sh
 run_bats_suite tests
 bash tests/homebrew-services.sh
 bash tests/global-packages.sh

@@ -78,3 +78,14 @@ SERVICES
   [[ "$(cat "${TEST_REPO}/.machete/active-profile")" == "work" ]]
   [[ ! -f "${TEST_REPO}/Brewfile" ]]
 }
+
+@test "snapshot refreshes previously tracked dotfiles outside the default list" {
+  mkdir -p "${TEST_REPO}/dotfiles/.config/ghostty" "${HOME}/.config/ghostty"
+  echo "font-size = 12" > "${TEST_REPO}/dotfiles/.config/ghostty/config"
+  echo "font-size = 14" > "${HOME}/.config/ghostty/config"
+
+  run "${TEST_REPO}/machete" snapshot
+
+  assert_success
+  grep -Fxq "font-size = 14" "${TEST_REPO}/dotfiles/.config/ghostty/config"
+}

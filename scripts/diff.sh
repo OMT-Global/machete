@@ -6,6 +6,7 @@ source "${REPO_DIR}/scripts/lib/profiles.sh"
 MACHETE_PROFILE="${MACHETE_PROFILE:-$(resolve_profile "${REPO_DIR}")}"
 DOTFILES_DIR="$(profile_dotfiles_dir "${REPO_DIR}" "${MACHETE_PROFILE}")"
 source "${REPO_DIR}/scripts/lib/brewfile.sh"
+source "${REPO_DIR}/scripts/lib/dotfiles.sh"
 
 usage() {
   cat <<'EOF'
@@ -111,12 +112,10 @@ diff_brewfile() {
 
 if [[ "${#PATHS[@]}" -eq 0 && "${DO_BREW}" -eq 0 ]]; then
   show_header "Dotfiles"
-  if [[ -d "${DOTFILES_DIR}" ]]; then
-    while IFS= read -r tracked_file; do
-      relative_path="${tracked_file#${DOTFILES_DIR}/}"
-      diff_dotfile "${relative_path}"
-    done < <(find "${DOTFILES_DIR}" -type f ! -name '.gitkeep' | sort)
-  fi
+  while IFS= read -r tracked_file; do
+    relative_path="${tracked_file#${DOTFILES_DIR}/}"
+    diff_dotfile "${relative_path}"
+  done < <(dotfiles_list "${DOTFILES_DIR}")
 
   show_header "Brewfile"
   diff_brewfile

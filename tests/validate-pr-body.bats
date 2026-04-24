@@ -53,7 +53,7 @@ Closes #24
 EOF
 
   [ "$status" -eq 1 ]
-  [[ "$output" == *"meaningful summary"* ]]
+  [[ "$output" == *"Legacy PR body must include"* ]]
 }
 
 @test "validate-pr-body still rejects incomplete structured templates" {

@@ -19,8 +19,6 @@ add_failure() {
   failures+=("$1")
 }
 
-issue_reference_pattern='(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?)[[:space:]]+#[0-9]+'
-
 has_meaningful_content() {
   local content="$1"
 
@@ -50,19 +48,6 @@ has_meaningful_content() {
       exit found ? 0 : 1
     }
   ' <<<"$content"
-}
-
-uses_structured_template() {
-  grep -Eq '^##[[:space:]]+' <<<"$body"
-}
-
-legacy_summary_content() {
-  printf '%s\n' "$body" | perl -ne '
-    next if /^\s*$/;
-    next if /^\s*<!--/;
-    next if /^\s*(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|refs?)\s+#\d+\s*$/i;
-    print;
-  '
 }
 
 section_content() {
@@ -98,9 +83,44 @@ require_section() {
   fi
 }
 
-if ! grep -Eiq "$issue_reference_pattern" <<<"$body"; then
-  add_failure "PR body must link a governing issue with Closes/Fixes/Resolves/Refs #number."
-fi
+has_issue_link() {
+  grep -Eiq '(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?)[[:space:]]+#[0-9]+' <<<"$body"
+}
+
+uses_structured_template() {
+  local section
+
+  for section in "${required_sections[@]}"; do
+    if grep -Eq "^##[[:space:]]+${section//\//\\/}[[:space:]]*$" <<<"$body"; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+has_legacy_summary() {
+  local filtered
+
+  filtered="$(
+    awk '
+      {
+        line=$0
+        sub(/\r$/, "", line)
+
+        lowered = tolower(line)
+
+        if (lowered ~ /^(close[sd]?|fix(e[sd])?|resolve[sd]?|refs?)[[:space:]]+#[0-9]+[[:space:]]*$/) {
+          next
+        }
+
+        print line
+      }
+    ' <<<"$body"
+  )"
+
+  has_meaningful_content "$filtered"
+}
 
 required_sections=(
   "Governing Issue"
@@ -112,18 +132,20 @@ required_sections=(
   "Agent Ownership"
 )
 
+if ! has_issue_link; then
+  add_failure "PR body must link a governing issue with Closes/Fixes/Resolves/Refs #number."
+fi
+
 if uses_structured_template; then
   for section in "${required_sections[@]}"; do
     require_section "$section"
   done
-else
-  if ! has_meaningful_content "$(legacy_summary_content)"; then
-    add_failure "PR body must include a meaningful summary in addition to the governing issue link."
-  fi
-fi
 
-if grep -Eq '^[[:space:]]*[-*][[:space:]]+\[[[:space:]]\][[:space:]]+' <<<"$body"; then
-  add_failure "PR body contains unchecked required checklist items."
+  if grep -Eq '^[[:space:]]*[-*][[:space:]]+\[[[:space:]]\][[:space:]]+' <<<"$body"; then
+    add_failure "PR body contains unchecked required checklist items."
+  fi
+elif ! has_legacy_summary; then
+  add_failure "Legacy PR body must include a non-placeholder summary in addition to the governing issue link."
 fi
 
 if [[ "${#failures[@]}" -gt 0 ]]; then
