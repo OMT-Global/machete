@@ -113,6 +113,9 @@ machete/
     macos-defaults.sh
     brew-services.txt
   profiles/
+    base/
+      Brewfile
+      dotfiles/
     work/
       Brewfile
       dotfiles/
@@ -120,8 +123,6 @@ machete/
       defaults/
         macos-defaults.sh
         brew-services.txt
-  .machete/
-    active-profile         # persisted current profile name
   scripts/
     setup.sh               # internals for ./machete setup
     snapshot.sh            # internals for ./machete snapshot
@@ -139,11 +140,13 @@ machete/
 `machete` supports multiple machine profiles in one repo.
 
 - `default` keeps the existing flat repo layout for backward compatibility.
+- When `profiles/base/` exists, it is always applied first and named profiles layer on top of it.
 - Named profiles live under `profiles/<name>/`.
 - `--profile <name>` works with `setup`, `snapshot`, `sync`, `doctor`, and `diff`.
-- The last explicit `--profile` is stored in `.machete/active-profile` and reused on later commands.
+- The last explicit `--profile` is stored in `~/.machete/profile` and reused on later commands.
 
 ```bash
+mkdir -p profiles/base
 ./machete profile create work
 ./machete snapshot --profile work
 ./machete doctor           # now uses the persisted work profile

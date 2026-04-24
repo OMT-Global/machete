@@ -61,6 +61,9 @@ teardown() {
   echo "work=true" > "${TEST_REPO}/profiles/work/dotfiles/.profile"
   cp "${TEST_REPO}/profiles/work/dotfiles/.profile" "${HOME}/.profile"
 
+  run "${TEST_REPO}/machete" profile create work
+  assert_success
+
   run "${TEST_REPO}/machete" help --profile work
   assert_success
 

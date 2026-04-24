@@ -70,6 +70,10 @@ case "${1:-}" in
         ;;
       install)
         printf '%s\n' "$*" >> "${FAKE_BREW_LOG:-/dev/null}"
+        destination="$(find_file_arg "$@")"
+        if [[ -n "${FAKE_BREW_INSTALLED_BREWFILE:-}" && -n "${destination}" ]]; then
+          cp "${destination}" "${FAKE_BREW_INSTALLED_BREWFILE}"
+        fi
         ;;
       *)
         echo "unexpected brew bundle command: $*" >&2
@@ -105,6 +109,9 @@ case "${1:-}" in
         ;;
     esac
     ;;
+  shellenv)
+    exit 0
+    ;;
   *)
     echo "unexpected brew command: $*" >&2
     exit 1
@@ -112,6 +119,26 @@ case "${1:-}" in
 esac
 BREW
   chmod +x "${FAKE_BIN}/brew"
+}
+
+install_fake_xcode_select() {
+  cat > "${FAKE_BIN}/xcode-select" <<'XCODE'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${1:-}" == "-p" ]]; then
+  echo "/Applications/Xcode.app/Contents/Developer"
+  exit 0
+fi
+
+if [[ "${1:-}" == "--install" ]]; then
+  exit 0
+fi
+
+echo "unexpected xcode-select command: $*" >&2
+exit 1
+XCODE
+  chmod +x "${FAKE_BIN}/xcode-select"
 }
 
 install_fake_git() {
