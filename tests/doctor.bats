@@ -40,14 +40,14 @@ teardown() {
   assert_output_contains "Some checks need attention"
 }
 
-@test "doctor fails when a tracked dotfile is missing from home" {
+@test "doctor treats a tracked dotfile missing from home as informational" {
   echo 'alias ll="ls -la"' > "${TEST_REPO}/dotfiles/.zshrc"
 
   run "${TEST_REPO}/machete" doctor
 
-  assert_failure
-  assert_output_contains ".zshrc: missing from home directory"
-  assert_output_contains "Some checks need attention"
+  assert_success
+  assert_output_contains ".zshrc: absent from home directory"
+  assert_output_contains "All checks passed."
 }
 
 @test "doctor fails when Brewfile entries are not installed" {

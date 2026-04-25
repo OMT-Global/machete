@@ -19,6 +19,7 @@ Commands:
   schedule   Install a launchd agent that runs sync and update automatically each day
   track      Add one or more home-directory files to dotfiles/ and symlink them back into $HOME
   untrack    Remove one or more files from dotfiles/ and replace managed home symlinks with regular files
+  uninstall  Dry-run or apply a reversible teardown of machete-managed home dotfile symlinks
   services   Start Homebrew services listed in defaults/brew-services.txt
   history    List rollback snapshot tags, newest first
   rollback   Check out a snapshot tag and re-apply setup
@@ -43,6 +44,7 @@ Examples:
   ./machete schedule     # install a daily sync + update launch agent
   ./machete track .config/ghostty/config
   ./machete untrack .vimrc
+  ./machete uninstall --dotfiles --apply
   ./machete services     # restore saved Homebrew services
   ./machete history      # list rollback snapshots
   ./machete rollback     # restore the latest snapshot
@@ -104,6 +106,7 @@ case "${CMD}" in
   schedule) exec_script "${SCRIPTS_DIR}/schedule.sh" ;;
   track)    exec_script "${SCRIPTS_DIR}/track.sh" ;;
   untrack)  exec_script "${SCRIPTS_DIR}/untrack.sh" ;;
+  uninstall) exec_script "${SCRIPTS_DIR}/uninstall.sh" ;;
   services) exec_script "${SCRIPTS_DIR}/services.sh" ;;
   history)  exec_script "${SCRIPTS_DIR}/history.sh" ;;
   rollback) exec_script "${SCRIPTS_DIR}/rollback.sh" ;;

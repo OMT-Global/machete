@@ -218,12 +218,12 @@ esac
 # --- Dotfiles ---
 header "Dotfiles"
 FOUND=0
-while IFS=$'\t' read -r rel src; do
+while IFS=$'	' read -r rel src; do
   FOUND=$((FOUND + 1))
   dst="$(dotfile_home_path "${rel}")"
 
   if [[ ! -e "${dst}" ]]; then
-    warn "${rel}: missing from home directory (not symlinked)"
+    info "${rel}: absent from home directory"
   elif [[ -L "${dst}" ]]; then
     target="$(readlink "${dst}")"
     if [[ "${target}" != /* ]]; then
