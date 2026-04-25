@@ -14,6 +14,7 @@ source "${REPO_DIR}/scripts/lib/editor-extensions.sh"
 source "${REPO_DIR}/scripts/lib/snapshot-tags.sh"
 
 WITH_EXTENSIONS=0
+AUDIT_BASELINE_MODE="${MACHETE_AUDIT_BASELINE_MODE:-background}"
 
 usage() {
   cat <<'EOF'
@@ -116,3 +117,46 @@ echo "    cd ${REPO_DIR}"
 echo "    git diff --stat"
 echo "    git add ."
 echo "    git commit -m 'snapshot: \$(date +%Y-%m-%d)' && git push"
+
+python_bin=""
+if command -v python3 >/dev/null 2>&1; then
+  python_bin="$(command -v python3)"
+elif command -v python >/dev/null 2>&1; then
+  python_bin="$(command -v python)"
+fi
+
+if [[ -n "${python_bin}" ]]; then
+  checksum_db="${MACHETE_CHECKSUM_DB:-${HOME}/.machete/checksums.sqlite}"
+  baseline_cmd=(
+    "${python_bin}"
+    "${REPO_DIR}/scripts/cksum.py"
+    --db "${checksum_db}"
+    --scope "home:${HOME}"
+    --mode init
+    --home "${HOME}"
+  )
+
+  case "${AUDIT_BASELINE_MODE}" in
+    background)
+      echo "==> Starting full-home audit baseline refresh in background"
+      log_file="${HOME}/.machete/audit-baseline.log"
+      mkdir -p "$(dirname "${log_file}")"
+      (
+        "${baseline_cmd[@]}" >"${log_file}" 2>&1
+      ) &
+      ;;
+    foreground)
+      echo "==> Refreshing full-home audit baseline"
+      "${baseline_cmd[@]}"
+      ;;
+    skip)
+      echo "==> Skipping full-home audit baseline refresh"
+      ;;
+    *)
+      echo "Unknown MACHETE_AUDIT_BASELINE_MODE: ${AUDIT_BASELINE_MODE}" >&2
+      exit 1
+      ;;
+  esac
+else
+  echo "==> Python not found; skipping full-home audit baseline refresh."
+fi

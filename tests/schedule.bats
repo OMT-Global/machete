@@ -39,6 +39,9 @@ teardown() {
   FAKE_LAUNCHCTL_LOG="${TEST_ROOT}/launchctl.log"
   export FAKE_LAUNCHCTL_LOG
 
+  run "${TEST_REPO}/machete" profile create work
+  assert_success
+
   run "${TEST_REPO}/machete" help --profile work
   assert_success
 
