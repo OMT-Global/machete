@@ -6,7 +6,6 @@ DEFAULT_TRACKED_DOTFILES=(
   .gitconfig
   .gitignore_global
   .vimrc
-  .ssh/config
 )
 
 dotfiles_default_paths() {
