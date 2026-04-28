@@ -54,3 +54,25 @@ teardown() {
   assert_failure
   assert_output_contains "Invalid dotfile path"
 }
+
+@test "track refuses non-portable auth, session, cache, and env paths" {
+  mkdir -p "${HOME}/.codex" "${HOME}/.cache/app"
+  echo "token" > "${HOME}/.env"
+  echo "session" > "${HOME}/.codex/session.json"
+  echo "cache" > "${HOME}/.cache/app/state"
+
+  run "${TEST_REPO}/machete" track .env
+  assert_failure
+  assert_output_contains "Refusing to track .env: machine-local environment file."
+  [[ ! -e "${TEST_REPO}/dotfiles/.env" ]]
+
+  run "${TEST_REPO}/machete" track .codex/session.json
+  assert_failure
+  assert_output_contains "Refusing to track .codex/session.json: local agent auth, sessions, or cache state."
+  [[ ! -e "${TEST_REPO}/dotfiles/.codex/session.json" ]]
+
+  run "${TEST_REPO}/machete" track .cache/app/state
+  assert_failure
+  assert_output_contains "Refusing to track .cache/app/state: cache directory."
+  [[ ! -e "${TEST_REPO}/dotfiles/.cache/app/state" ]]
+}

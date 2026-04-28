@@ -32,6 +32,12 @@ for path in "$@"; do
     exit 1
   fi
 
+  if ! dotfile_is_portable_path "${relative_path}"; then
+    reason="$(dotfile_non_portable_reason "${relative_path}")"
+    echo "Refusing to track ${relative_path}: ${reason}." >&2
+    exit 1
+  fi
+
   source_path="$(dotfile_home_path "${relative_path}")"
 
   if [[ ! -e "${source_path}" ]]; then

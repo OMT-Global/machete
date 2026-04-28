@@ -71,6 +71,29 @@ agents:
   manageClaudeHome: true
   codexProfile: default
   claudeProfile: default
+  portableProfileDenylist:
+    - .env
+    - .env.*
+    - .claude/**
+    - .codex/**
+    - .machete/**
+    - .cache/**
+    - Library/Caches/**
+    - .ssh/**
+    - .gnupg/**
+    - .aws/credentials
+    - .aws/config
+    - .netrc
+    - .pypirc
+    - .npmrc
+    - .docker/config.json
+    - .config/gh/hosts.yml
+    - .kube/config
+    - "*token*"
+    - "*session*"
+    - "*cookie*"
+    - "*credential*"
+    - "*secret*"
   enableClaudeWebEnvironment: true
   enableClaudeDevcontainer: true
   enableClaudeGitHubAction: true

@@ -196,13 +196,13 @@ Files in `dotfiles/` are **symlinked** (not copied) into `$HOME` by `./machete s
 - No manual syncing required
 - `./machete snapshot` re-copies them if you add new dotfiles to track
 
-To start tracking a new file, run `./machete track PATH`. This copies `~/PATH` into `dotfiles/PATH` and replaces the home file with a symlink back into the repo.
+To start tracking a new file, run `./machete track PATH`. This copies `~/PATH` into `dotfiles/PATH` and replaces the home file with a symlink back into the repo. Machete refuses non-portable paths such as auth state, sessions, caches, `.env` files, SSH/GitHub/AWS/Kubernetes credentials, and filenames that look token-, cookie-, credential-, session-, or secret-bearing.
 
 To stop tracking a file, run `./machete untrack PATH`. If the home file is still symlinked to the repo copy, machete converts it back into a regular file before removing `dotfiles/PATH`.
 
 To undo the machine-local dotfile install without touching the repo copy, run `./machete uninstall --dotfiles` for a dry run, then `./machete uninstall --dotfiles --apply` to remove repo-managed symlinks and restore the newest `<file>.bak.<timestamp>` backup when one exists.
 
-`./machete snapshot` refreshes whatever is already tracked under `dotfiles/`. On a brand-new repo with no tracked dotfiles yet, it still seeds the default starter set (`.zshrc`, `.zprofile`, `.gitconfig`, `.gitignore_global`, `.vimrc`) when those files exist.
+`./machete snapshot` refreshes portable files already tracked under `dotfiles/` and skips any tracked path that matches the non-portable denylist. On a brand-new repo with no tracked dotfiles yet, it still seeds the default starter set (`.zshrc`, `.zprofile`, `.gitconfig`, `.gitignore_global`, `.vimrc`) when those files exist.
 
 Before publishing or sharing a machete repo, template personal identity fields in dotfiles such as `.gitconfig` and remove shell snippets that load local API tokens from the keychain or environment.
 

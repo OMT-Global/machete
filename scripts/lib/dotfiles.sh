@@ -8,6 +8,41 @@ DEFAULT_TRACKED_DOTFILES=(
   .vimrc
 )
 
+dotfile_non_portable_reason() {
+  local relative_path="$1"
+
+  case "${relative_path}" in
+    .env|.env.*|*/.env|*/.env.*)
+      printf '%s\n' "machine-local environment file"
+      return 0
+      ;;
+    .claude|.claude/*|.codex|.codex/*|.machete|.machete/*)
+      printf '%s\n' "local agent auth, sessions, or cache state"
+      return 0
+      ;;
+    .cache|.cache/*|*/.cache|*/.cache/*|Library/Caches|Library/Caches/*)
+      printf '%s\n' "cache directory"
+      return 0
+      ;;
+    .ssh|.ssh/*|.gnupg|.gnupg/*|.aws/credentials|.aws/config|.netrc|.pypirc|.npmrc|.docker/config.json|.config/gh/hosts.yml|.kube/config)
+      printf '%s\n' "auth state or machine-local credential file"
+      return 0
+      ;;
+    *[Tt]oken*|*[Ss]ession*|*[Cc]ookie*|*[Cc]redential*|*[Ss]ecret*)
+      printf '%s\n' "secret-bearing filename"
+      return 0
+      ;;
+  esac
+
+  return 1
+}
+
+dotfile_is_portable_path() {
+  local relative_path="$1"
+
+  ! dotfile_non_portable_reason "${relative_path}" >/dev/null
+}
+
 dotfiles_default_paths() {
   printf '%s\n' "${DEFAULT_TRACKED_DOTFILES[@]}"
 }
