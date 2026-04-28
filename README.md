@@ -1,10 +1,24 @@
-# machete 🛠️
+# machete
 
 Swiss army knife for macOS setup and maintenance.
 
 Snapshot your current Mac into Git, restore it on a new machine in one command, and keep everything in sync over time.
 
-## Commands ⚡
+## Command Safety
+
+`machete` is intentionally high-impact: it can install packages, symlink files into `$HOME`, apply macOS defaults, start Homebrew services, and rewrite tracked snapshots from the current machine state.
+
+Review the commands below before running them on a machine you care about:
+
+- `./machete setup` installs or restores Homebrew packages, global packages, services, dotfile symlinks, and macOS defaults. Existing home files are backed up with timestamped names before symlinks are created.
+- `./machete sync` pulls the latest repo changes and re-runs setup for the active profile.
+- `./machete snapshot` copies selected live machine state into this repository. Review `git diff` before committing so private paths, identities, or secrets do not become portable profile data.
+- `./machete defaults` applies the shell commands in `defaults/macos-defaults.sh` to the current macOS user.
+- `./machete schedule` installs a per-user `launchd` job that runs `sync` and `update` on a schedule.
+
+Read-only inspection commands are `doctor`, `diff`, `history`, `verify` without `--init`, and `audit`.
+
+## Commands
 
 ```
 ./machete setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
@@ -29,7 +43,7 @@ Snapshot your current Mac into Git, restore it on a new machine in one command, 
                     Create defaults/macos-defaults.sh with an interactive preset picker
 ```
 
-## How It Works 🧭
+## How It Works
 
 ```
 Current Mac                   Git Repository              New Mac
@@ -45,7 +59,7 @@ Current Mac                   Git Repository              New Mac
 └──────────────────────┘      └──────────────────┘      └──────────────────────┘
 ```
 
-## Quick Start 🚀
+## Quick Start
 
 ### On your current Mac (first time)
 
@@ -64,6 +78,8 @@ git commit -m "snapshot: $(date +%Y-%m-%d)" && git push
 ```
 
 `setup`, `snapshot`, and `sync` create rollback tags before they modify state. Tags are named `snapshot/YYYY-MM-DDTHH-MM-SS`.
+
+Before committing a snapshot, inspect `git status --short`, `git diff --stat`, and the full diff for private paths, API tokens, machine-local shell snippets, and personal identity fields that should stay out of a shared repo.
 
 ### On a new Mac
 
@@ -103,7 +119,7 @@ To restore a specific snapshot, pass its tag:
 ./machete rollback snapshot/2026-04-22T09-30-00
 ```
 
-## File Structure 📁
+## File Structure
 
 ```
 machete/
@@ -164,7 +180,7 @@ mkdir -p profiles/base
 ./machete profile list
 ```
 
-## Global packages 📦
+## Global packages
 
 `./machete snapshot` now also records user/global packages for:
 - `npm -g` → `packages/npm-global.txt`
@@ -173,7 +189,7 @@ mkdir -p profiles/base
 
 `./machete setup` restores each list when the corresponding tool is available, and `./machete doctor` reports drift if the live machine no longer matches the saved snapshot.
 
-## Dotfiles ✍️
+## Dotfiles
 
 Files in `dotfiles/` are **symlinked** (not copied) into `$HOME` by `./machete setup`. This means:
 - Editing `~/.zshrc` edits the repo file directly
@@ -190,7 +206,7 @@ To undo the machine-local dotfile install without touching the repo copy, run `.
 
 Before publishing or sharing a machete repo, template personal identity fields in dotfiles such as `.gitconfig` and remove shell snippets that load local API tokens from the keychain or environment.
 
-## macOS Defaults 🎛️
+## macOS Defaults
 
 `defaults/macos-defaults.sh` is generated on first `./machete snapshot`, or any time with `./machete defaults --init`.
 The preset picker offers:
@@ -214,13 +230,13 @@ If a saved service is not installed, machete prints a warning and skips it. `./m
 `./machete snapshot --with-extensions` writes extensions from the first available VS Code-compatible CLI (`code`, `cursor`, or `codium`) to `packages/vscode-extensions.txt`.
 When that file exists, `./machete setup` installs each saved extension with the first available editor CLI. If no supported editor CLI is installed, setup prints a warning and continues. `./machete doctor` reports extension drift only when `packages/vscode-extensions.txt` exists.
 
-## Requirements ✅
+## Requirements
 
 - macOS (Intel or Apple Silicon)
 - Git
 - Internet connection (for Homebrew)
 
-## Troubleshooting 🧰
+## Troubleshooting
 
 - **Homebrew not found after install**: ensure `/opt/homebrew/bin` (Apple Silicon) or `/usr/local/bin` (Intel) is in your `PATH`
 - **Permission denied**: `chmod +x machete`
@@ -230,6 +246,8 @@ When that file exists, `./machete setup` installs each saved extension with the 
 ## Privacy
 
 Do not commit private keys, SSH configs, auth files, shell history, session state, cache directories, local Claude/Codex worktrees, or files that contain tokens, passwords, cookies, or machine-local secrets. Keep local tool state such as `.claude/` and `.codex/` out of the repo unless you have separated a small, portable scaffold from generated runtime data.
+
+The bootstrap docs under `docs/bootstrap/` are maintainer/operator notes for this repository. They are not required for normal public `machete` usage.
 
 ## License
 

@@ -11,6 +11,7 @@ repo:
     - AGENTS.md
     - CLAUDE.md
     - CODEOWNERS
+    - .mailmap
     - .shellcheckrc
     - .githooks/**
     - .devcontainer/**
@@ -24,6 +25,8 @@ repo:
     - scripts/claude-cloud/**
     - scripts/claude/**
     - docs/bootstrap/**
+    - docs/history-privacy-decision.md
+    - docs/public-readiness.md
 archetype:
   kind: generic-empty
   packageManager: npm
@@ -54,7 +57,7 @@ github:
     hasWiki: false
     hasDiscussions: false
 ci:
-  runnerPolicy: hybrid-safe
+  runnerPolicy: public-shell-safe
   nodeVersion: "20"
   pythonVersion: "3.12"
   fastChecks:

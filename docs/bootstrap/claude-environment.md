@@ -1,8 +1,10 @@
-    # Claude Environment
+# Claude Environment
 
-    Claude Code on the web provides a first-party cloud environment comparable to Codex Web. This bootstrap prepares the hosted path first, then adds optional local and GitHub-native alternatives:
+Maintainer/operator setup for Claude-assisted repository work. Public users do not need this for normal `machete` usage.
 
-    - First-party hosted sessions at `claude.ai/code`
+Claude Code on the web provides a first-party cloud environment comparable to Codex Web. This bootstrap prepares the hosted path first, then adds optional local and GitHub-native alternatives:
+
+- First-party hosted sessions at `claude.ai/code`
 - Interactive containerized work with `.devcontainer/devcontainer.json`
 - GitHub-hosted automation with `.github/workflows/claude.yml`
 
@@ -42,15 +44,15 @@
   - preferred: run `/install-github-app` in Claude Code as a repo admin
   - fallback: add a repository secret named `ANTHROPIC_API_KEY`
 
-    ## Guardrails
+## Guardrails
 
-    - Keep the Claude workflow out of the required PR check set. The required checks are `CI Gate`.
+- Keep the Claude workflow out of the required PR check set. The required checks are `CI Gate`.
 - Prefer Claude Code on the web for long-running async review or fix tasks; use the devcontainer when you need a local interactive container.
 - Treat the devcontainer as a trusted-repo workspace because the mounted `~/.claude` profile is available inside the container.
 - Do not relax the action to allow non-write users on public repos unless you intentionally accept the prompt-injection risk.
 - Keep Claude review and automation on GitHub-hosted runners; do not move it onto the self-hosted shell-only fleet.
 
-    ## Project
+## Project
 
-    - Repository: `OMT-Global/machete`
-    - Default branch: `main`
+- Repository: `OMT-Global/machete`
+- Default branch: `main`

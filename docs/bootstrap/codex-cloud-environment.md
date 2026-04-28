@@ -1,5 +1,7 @@
 # Codex Cloud Environment
 
+Maintainer/operator setup for Codex cloud tasks. Public users do not need this for normal `machete` usage.
+
 Configure the Codex Web environment in Codex settings for:
 
 - Repo: `OMT-Global/machete`

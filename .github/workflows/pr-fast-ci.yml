@@ -23,7 +23,7 @@ defaults:
 jobs:
   changes:
     name: Detect Relevant Changes
-    runs-on: ['self-hosted', 'synology', 'shell-only', 'private']
+    runs-on: ['self-hosted', 'synology', 'shell-only', 'public']
     outputs:
       app: ${{ steps.filter.outputs.app }}
       ci: ${{ steps.filter.outputs.ci }}
@@ -65,7 +65,7 @@ jobs:
 
   fast-checks:
     name: Fast Checks
-    runs-on: ['self-hosted', 'synology', 'shell-only', 'private']
+    runs-on: ['self-hosted', 'synology', 'shell-only', 'public']
     timeout-minutes: 15
     needs: changes
     if: >-
@@ -83,7 +83,7 @@ jobs:
 
   shellcheck:
     name: ShellCheck
-    runs-on: ['self-hosted', 'synology', 'shell-only', 'private']
+    runs-on: ['self-hosted', 'synology', 'shell-only', 'public']
     timeout-minutes: 5
     needs: changes
     if: >-
@@ -99,7 +99,7 @@ jobs:
 
   validate-secrets:
     name: Validate Secrets
-    runs-on: ['self-hosted', 'synology', 'shell-only', 'private']
+    runs-on: ['self-hosted', 'synology', 'shell-only', 'public']
     timeout-minutes: 10
     if: github.event.pull_request.draft == false
     steps:
@@ -111,7 +111,7 @@ jobs:
 
   validate-pr-description:
     name: Validate PR Description
-    runs-on: ['self-hosted', 'synology', 'shell-only', 'private']
+    runs-on: ['self-hosted', 'synology', 'shell-only', 'public']
     timeout-minutes: 5
     if: github.event.pull_request.draft == false
     steps:
@@ -126,7 +126,7 @@ jobs:
 
   ci-gate:
     name: CI Gate
-    runs-on: ['self-hosted', 'synology', 'shell-only', 'private']
+    runs-on: ['self-hosted', 'synology', 'shell-only', 'public']
     if: always()
     needs:
       - changes
