@@ -84,6 +84,12 @@ mkdir -p "${DOTFILES_DIR}"
 if dotfiles_has_tracked_files "${DOTFILES_DIR}"; then
   while IFS= read -r tracked_file; do
     relative_path="${tracked_file#${DOTFILES_DIR}/}"
+    if ! dotfile_is_portable_path "${relative_path}"; then
+      reason="$(dotfile_non_portable_reason "${relative_path}")"
+      echo "  - ${relative_path} (skipped: ${reason})"
+      continue
+    fi
+
     source_path="$(dotfile_home_path "${relative_path}")"
     if [[ -f "${source_path}" ]]; then
       copy_home_dotfile_to_repo "${DOTFILES_DIR}" "${relative_path}"
@@ -94,6 +100,12 @@ if dotfiles_has_tracked_files "${DOTFILES_DIR}"; then
   done < <(dotfiles_list "${DOTFILES_DIR}")
 else
   while IFS= read -r default_path; do
+    if ! dotfile_is_portable_path "${default_path}"; then
+      reason="$(dotfile_non_portable_reason "${default_path}")"
+      echo "  - ${default_path} (skipped: ${reason})"
+      continue
+    fi
+
     source_path="$(dotfile_home_path "${default_path}")"
     if [[ -f "${source_path}" ]]; then
       copy_home_dotfile_to_repo "${DOTFILES_DIR}" "${default_path}"
