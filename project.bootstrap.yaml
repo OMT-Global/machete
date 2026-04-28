@@ -2,7 +2,7 @@ version: 1
 project:
   name: machete
   description: Swiss army knife for macOS setup and maintenance.
-  visibility: private
+  visibility: public
   owner: OMT-Global
   defaultBranch: main
 repo:

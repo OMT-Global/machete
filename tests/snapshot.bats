@@ -5,6 +5,7 @@ load helper
 setup() {
   setup_test_repo
   install_fake_brew
+  export MACHETE_AUDIT_BASELINE_MODE=skip
   rm -rf "${TEST_REPO}/Brewfile" "${TEST_REPO}/defaults"
 }
 
@@ -42,7 +43,7 @@ SERVICES
   [[ -f "${TEST_REPO}/defaults/brew-services.txt" ]]
   [[ -x "${TEST_REPO}/defaults/macos-defaults.sh" ]]
   [[ -f "${TEST_REPO}/dotfiles/.zshrc" ]]
-  [[ -f "${TEST_REPO}/dotfiles/.ssh/config" ]]
+  [[ ! -e "${TEST_REPO}/dotfiles/.ssh/config" ]]
   grep -Fxq 'brew "git"' "${TEST_REPO}/Brewfile"
   grep -Fxq 'cask "ghostty"' "${TEST_REPO}/Brewfile"
   ! grep -Fq 'local/private' "${TEST_REPO}/Brewfile"

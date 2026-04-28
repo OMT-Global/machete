@@ -57,7 +57,10 @@ cd machete
 ./machete profile create work
 ./machete snapshot --profile work  # captures a separate machine under profiles/work/
 vim defaults/macos-defaults.sh  # customize your system preferences
-git add . && git commit -m "snapshot: $(date +%Y-%m-%d)" && git push
+git status --short
+git diff --stat
+git add Brewfile dotfiles defaults packages profiles
+git commit -m "snapshot: $(date +%Y-%m-%d)" && git push
 ```
 
 `setup`, `snapshot`, and `sync` create rollback tags before they modify state. Tags are named `snapshot/YYYY-MM-DDTHH-MM-SS`.
@@ -115,7 +118,6 @@ machete/
     .zshrc
     .zprofile
     .gitconfig
-    .ssh/config
     ...
   defaults/                # default-profile defaults
     macos-defaults.sh
@@ -184,7 +186,7 @@ To stop tracking a file, run `./machete untrack PATH`. If the home file is still
 
 To undo the machine-local dotfile install without touching the repo copy, run `./machete uninstall --dotfiles` for a dry run, then `./machete uninstall --dotfiles --apply` to remove repo-managed symlinks and restore the newest `<file>.bak.<timestamp>` backup when one exists.
 
-`./machete snapshot` refreshes whatever is already tracked under `dotfiles/`. On a brand-new repo with no tracked dotfiles yet, it still seeds the default starter set (`.zshrc`, `.zprofile`, `.gitconfig`, `.gitignore_global`, `.vimrc`, `.ssh/config`) when those files exist.
+`./machete snapshot` refreshes whatever is already tracked under `dotfiles/`. On a brand-new repo with no tracked dotfiles yet, it still seeds the default starter set (`.zshrc`, `.zprofile`, `.gitconfig`, `.gitignore_global`, `.vimrc`) when those files exist.
 
 Before publishing or sharing a machete repo, template personal identity fields in dotfiles such as `.gitconfig` and remove shell snippets that load local API tokens from the keychain or environment.
 
