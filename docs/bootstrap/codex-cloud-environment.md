@@ -1,14 +1,10 @@
 # Codex Cloud Environment
 
-Configure the Codex Web environment in Codex settings for this bootstrap-managed repository.
+Maintainer/operator setup for Codex cloud tasks. Public users do not need this for normal `machete` usage.
 
-## Project
+Configure the Codex Web environment in Codex settings for:
 
-- Repository: `OMT-Global/machete`
-- Manifest: `project.bootstrap.yaml`
-
-## Environment Settings
-
+- Repo: `OMT-Global/machete`
 - Base image: `universal`
 - Setup mode: manual setup script
 - Setup script: `bash scripts/codex-cloud/setup.sh`

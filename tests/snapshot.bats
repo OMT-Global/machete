@@ -5,6 +5,7 @@ load helper
 setup() {
   setup_test_repo
   install_fake_brew
+  export MACHETE_AUDIT_BASELINE_MODE=skip
   rm -rf "${TEST_REPO}/Brewfile" "${TEST_REPO}/defaults"
 }
 
@@ -42,7 +43,7 @@ SERVICES
   [[ -f "${TEST_REPO}/defaults/brew-services.txt" ]]
   [[ -x "${TEST_REPO}/defaults/macos-defaults.sh" ]]
   [[ -f "${TEST_REPO}/dotfiles/.zshrc" ]]
-  [[ -f "${TEST_REPO}/dotfiles/.ssh/config" ]]
+  [[ ! -e "${TEST_REPO}/dotfiles/.ssh/config" ]]
   grep -Fxq 'brew "git"' "${TEST_REPO}/Brewfile"
   grep -Fxq 'cask "ghostty"' "${TEST_REPO}/Brewfile"
   ! grep -Fq 'local/private' "${TEST_REPO}/Brewfile"
@@ -88,5 +89,34 @@ SERVICES
   run "${TEST_REPO}/machete" snapshot
 
   assert_success
+  grep -Fxq "font-size = 14" "${TEST_REPO}/dotfiles/.config/ghostty/config"
+}
+
+@test "snapshot skips tracked non-portable auth, session, cache, and env files" {
+  mkdir -p \
+    "${TEST_REPO}/dotfiles/.claude" \
+    "${TEST_REPO}/dotfiles/.cache/app" \
+    "${TEST_REPO}/dotfiles/.config/ghostty" \
+    "${HOME}/.claude" \
+    "${HOME}/.cache/app" \
+    "${HOME}/.config/ghostty"
+  echo "repo env placeholder" > "${TEST_REPO}/dotfiles/.env"
+  echo "repo session placeholder" > "${TEST_REPO}/dotfiles/.claude/session.json"
+  echo "repo cache placeholder" > "${TEST_REPO}/dotfiles/.cache/app/state"
+  echo "font-size = 12" > "${TEST_REPO}/dotfiles/.config/ghostty/config"
+  echo "HOME_SECRET=1" > "${HOME}/.env"
+  echo "home-session-token" > "${HOME}/.claude/session.json"
+  echo "home-cache-state" > "${HOME}/.cache/app/state"
+  echo "font-size = 14" > "${HOME}/.config/ghostty/config"
+
+  run "${TEST_REPO}/machete" snapshot
+
+  assert_success
+  assert_output_contains ".env (skipped: machine-local environment file)"
+  assert_output_contains ".claude/session.json (skipped: local agent auth, sessions, or cache state)"
+  assert_output_contains ".cache/app/state (skipped: cache directory)"
+  grep -Fxq "repo env placeholder" "${TEST_REPO}/dotfiles/.env"
+  grep -Fxq "repo session placeholder" "${TEST_REPO}/dotfiles/.claude/session.json"
+  grep -Fxq "repo cache placeholder" "${TEST_REPO}/dotfiles/.cache/app/state"
   grep -Fxq "font-size = 14" "${TEST_REPO}/dotfiles/.config/ghostty/config"
 }

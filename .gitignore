@@ -1,1 +1,10 @@
 .claude/
+.codex/
+.machete/
+.env
+.env.*
+!.env.example
+node_modules/
+.DS_Store
+*.pyc
+__pycache__/

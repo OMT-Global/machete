@@ -2,7 +2,7 @@ version: 1
 project:
   name: machete
   description: Swiss army knife for macOS setup and maintenance.
-  visibility: private
+  visibility: public
   owner: OMT-Global
   defaultBranch: main
 repo:
@@ -11,6 +11,7 @@ repo:
     - AGENTS.md
     - CLAUDE.md
     - CODEOWNERS
+    - .mailmap
     - .shellcheckrc
     - .githooks/**
     - .devcontainer/**
@@ -24,6 +25,8 @@ repo:
     - scripts/claude-cloud/**
     - scripts/claude/**
     - docs/bootstrap/**
+    - docs/history-privacy-decision.md
+    - docs/public-readiness.md
 archetype:
   kind: generic-empty
   packageManager: npm
@@ -146,7 +149,7 @@ github:
     hasWiki: false
     hasDiscussions: false
 ci:
-  runnerPolicy: hybrid-safe
+  runnerPolicy: public-shell-safe
   nodeVersion: "20"
   pythonVersion: "3.12"
   fastChecks:
@@ -176,6 +179,33 @@ release:
 agents:
   manageCodexHome: true
   codexProfile: default
+  claudeProfile: default
+  portableProfileDenylist:
+    - .env
+    - .env.*
+    - .claude/**
+    - .codex/**
+    - .machete/**
+    - .cache/**
+    - Library/Caches/**
+    - .ssh/**
+    - .gnupg/**
+    - .aws/credentials
+    - .aws/config
+    - .netrc
+    - .pypirc
+    - .npmrc
+    - .docker/config.json
+    - .config/gh/hosts.yml
+    - .kube/config
+    - "*token*"
+    - "*session*"
+    - "*cookie*"
+    - "*credential*"
+    - "*secret*"
+  enableClaudeWebEnvironment: true
+  enableClaudeDevcontainer: true
+  enableClaudeGitHubAction: true
   sharedSkills: []
 environments:
   dev:

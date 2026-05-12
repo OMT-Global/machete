@@ -3,7 +3,9 @@
 PROJECT_ROOT="$(cd "${BATS_TEST_DIRNAME}/.." && pwd)"
 
 setup_test_repo() {
-  TEST_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/machete-bats.XXXXXX")"
+  local tmp_parent="${TMPDIR:-/tmp}"
+  tmp_parent="${tmp_parent%/}"
+  TEST_ROOT="$(mktemp -d "${tmp_parent}/machete-bats.XXXXXX")"
   TEST_REPO="${TEST_ROOT}/repo"
   TEST_HOME="${TEST_ROOT}/home"
   FAKE_BIN="${TEST_ROOT}/bin"
