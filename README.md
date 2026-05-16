@@ -64,7 +64,7 @@ Current Mac                   Git Repository              New Mac
 ### On your current Mac (first time)
 
 ```bash
-git clone https://github.com/your-org/machete.git
+git clone https://github.com/OMT-Global/machete.git
 cd machete
 ./machete snapshot          # captures the default profile in the repo root
 ./machete snapshot --with-extensions
@@ -84,7 +84,7 @@ Before committing a snapshot, inspect `git status --short`, `git diff --stat`, a
 ### On a new Mac
 
 ```bash
-git clone https://github.com/your-org/machete.git
+git clone https://github.com/OMT-Global/machete.git
 cd machete
 ./machete setup
 ```

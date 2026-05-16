@@ -17,7 +17,7 @@ This document is for maintainers and operators of `OMT-Global/machete`. Public u
 
 ## Runner Policy
 
-- Required PR checks run on `[self-hosted, synology, shell-only, public]` runners in the `synology-public` runner group so `CI Gate` remains available after public visibility is enabled.
+- Required PR checks run on the public-eligible shell-only self-hosted runner lane so `CI Gate` remains available after public visibility is enabled. Keep the exact labels aligned with `.github/workflows/pr-fast-ci.yml` and `tests/public-readiness.sh`.
 - Trusted extended validation may use `[self-hosted, synology, shell-only, private]` for shell-safe maintainer jobs.
 - Docker, service-container, browser, and `container:` workloads stay on GitHub-hosted runners.
 - Keep PR checks cheap. Add heavy validation to `scripts/ci/run-extended-validation.sh` instead of the PR lane.
