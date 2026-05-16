@@ -1,6 +1,6 @@
 # Public Readiness Notes
 
-This repository is intended to be public once the GitHub visibility switch is complete.
+This repository is configured for public distribution. Before changing or confirming GitHub visibility, run the checks in this document and review the user-facing safety notes in the README.
 
 ## Maintainer Bootstrap Scope
 
@@ -23,6 +23,6 @@ Read-only inspection starts with:
 
 ## CI And Runner Decision
 
-Required PR validation runs on the `synology-public` self-hosted runner group with labels `[self-hosted, synology, shell-only, public]` so `CI Gate` remains available after the repository becomes public. The runner group allows public repositories and includes `OMT-Global/machete`.
+Required PR validation runs on a public-eligible shell-only self-hosted runner lane, so `CI Gate` remains available after the repository becomes public.
 
 The required PR lane stays shell-only and does not use Docker, service containers, browser infrastructure, or workflow `container:` blocks. Keep higher-risk work in trusted extended validation, nightly work, or manual maintainer workflows.
