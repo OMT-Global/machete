@@ -2,7 +2,7 @@ name: PR Fast CI
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review, edited]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
 
 concurrency:
   group: pr-fast-${{ github.event.pull_request.number || github.ref }}
@@ -10,7 +10,6 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: read
 
 env:
   NODE_VERSION: '20'
@@ -35,30 +34,22 @@ jobs:
             app:
               - 'project.bootstrap.yaml'
               - 'AGENTS.md'
-              - 'CLAUDE.md'
-              - '.devcontainer/**'
+              - 'CONTRIBUTING.md'
+              - '.github/PULL_REQUEST_TEMPLATE.md'
               - '.githooks/**'
-              - '.github/pull_request_template.md'
               - '.github/workflows/**'
-              - 'machete'
               - 'scripts/**'
-              - 'tests/**'
-              - 'Brewfile'
               - 'docs/bootstrap/**'
               - 'README.md'
               - 'docs/**'
             ci:
               - 'project.bootstrap.yaml'
               - 'AGENTS.md'
-              - 'CLAUDE.md'
-              - '.devcontainer/**'
+              - 'CONTRIBUTING.md'
+              - '.github/PULL_REQUEST_TEMPLATE.md'
               - '.githooks/**'
-              - '.github/pull_request_template.md'
               - '.github/workflows/**'
-              - 'machete'
               - 'scripts/**'
-              - 'tests/**'
-              - 'Brewfile'
               - 'docs/bootstrap/**'
               - '.env.example'
               - 'CODEOWNERS'
@@ -77,25 +68,57 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Run fast checks
-        env:
-          MACHETE_SKIP_SHELLCHECK: '1'
         run: bash scripts/ci/run-fast-checks.sh
 
-  shellcheck:
-    name: ShellCheck
+  validate-pr-description:
+    name: Validate PR Description
     runs-on: ['self-hosted', 'synology', 'shell-only', 'public']
     timeout-minutes: 5
-    needs: changes
-    if: >-
-      github.event.pull_request.draft == false &&
-      (needs.changes.outputs.app == 'true' || needs.changes.outputs.ci == 'true')
+    if: github.event.pull_request.draft == false
+    env:
+      PR_BODY: ${{ github.event.pull_request.body }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Require generated PR template content
+        run: |
+          failed=0
 
-      - name: Lint shell scripts
-        run: bash scripts/ci/run-shellcheck.sh
+          require_line() {
+            local line="$1"
+            if ! grep -Fqx "$line" <<<"$PR_BODY"; then
+              echo "Missing required PR section: $line"
+              failed=1
+            fi
+          }
+
+          require_line "## Summary"
+          require_line "## Governing Issue"
+          require_line "## Validation"
+          require_line "## Bootstrap Governance"
+          require_line "## Merge Automation"
+          require_line "## Notes"
+
+          if grep -Eiq 'Closes #$|#<issue-number>|what changed|why it changed|notable tradeoffs|migration or rollout notes|follow-up work if any' <<<"$PR_BODY"; then
+            echo "PR body still contains template placeholder text."
+            failed=1
+          fi
+
+          if ! grep -Eiq '(^|[[:space:]-])(((close[sd]?|fix(e[sd])?|resolve[sd]?|refs?|part[[:space:]]+of)[[:space:]]+)?(#|[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+#|https://github\.com/[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+/issues/)[0-9]+|no issue is linked|no linked issue|without a linked issue|no governing issue)' <<<"$PR_BODY"; then
+            echo "PR body must close/link an issue or explicitly explain why no issue is linked."
+            failed=1
+          fi
+
+          if ! grep -Eiq '(^|[[:space:]-])(\[[xX]\]|not run|not applicable|n/a)' <<<"$PR_BODY"; then
+            echo "PR body must include validation evidence, a checked validation item, or a reason validation was not run."
+            failed=1
+          fi
+
+          auto_merge_evidence="$(grep -Eiv '^[[:space:]]*-[[:space:]]+\[[[:space:]]\][[:space:]]' <<<"$PR_BODY" || true)"
+          if ! grep -Eiq 'auto-merge (is )?(enabled|armed)|enabled auto-merge|gh pr merge --auto|auto_merge|auto merge enabled|auto-merge (is )?(unavailable|unsafe|not available|not safe)|plan-limit|fallback merge-readiness' <<<"$auto_merge_evidence"; then
+            echo "PR body must state that the PR author enabled auto-merge, or explain why auto-merge is unavailable/unsafe."
+            failed=1
+          fi
+
+          exit "$failed"
 
   validate-secrets:
     name: Validate Secrets
@@ -109,21 +132,6 @@ jobs:
       - name: Scan repository for secret patterns
         run: bash scripts/check-detect-secrets.sh --all-files
 
-  validate-pr-description:
-    name: Validate PR Description
-    runs-on: ['self-hosted', 'synology', 'shell-only', 'public']
-    timeout-minutes: 5
-    if: github.event.pull_request.draft == false
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Validate required PR template sections
-        env:
-          PR_BODY: ${{ github.event.pull_request.body }}
-        run: printf '%s' "${PR_BODY:-}" | bash scripts/ci/validate-pr-body.sh -
-
   ci-gate:
     name: CI Gate
     runs-on: ['self-hosted', 'synology', 'shell-only', 'public']
@@ -131,18 +139,16 @@ jobs:
     needs:
       - changes
       - fast-checks
-      - shellcheck
-      - validate-secrets
       - validate-pr-description
+      - validate-secrets
     steps:
       - name: Check required PR jobs
         env:
           RESULTS: >-
             changes=${{ needs.changes.result }}
             fast-checks=${{ needs.fast-checks.result }}
-            shellcheck=${{ needs.shellcheck.result }}
-            validate-secrets=${{ needs.validate-secrets.result }}
             validate-pr-description=${{ needs.validate-pr-description.result }}
+            validate-secrets=${{ needs.validate-secrets.result }}
         run: |
           failed=0
           for entry in $RESULTS; do

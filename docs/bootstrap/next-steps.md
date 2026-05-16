@@ -1,8 +1,7 @@
 # Next Steps
 
-Maintainer/operator checklist for repository bootstrap work. Public users can ignore this document.
+- Add the primary runtime and package manifest for this project.
+- Tighten `scripts/ci/run-fast-checks.sh` and `scripts/ci/run-extended-validation.sh` once the toolchain is known.
 
-- Keep `project.bootstrap.yaml` aligned with required checks, managed paths, repo visibility, and reviewer policy.
-- Run `project-bootstrap plan --manifest ./project.bootstrap.yaml` before applying GitHub or home profile changes.
-- Review CODEOWNERS and environment reviewers before changing branch protection or environments.
-- Keep the required PR check named `CI Gate`.
+- Review CODEOWNERS, environment reviewers, and required PR checks before the first merge.
+- Re-run `bootstrap plan --manifest ./project.bootstrap.yaml` after major manifest changes to confirm intended drift.
