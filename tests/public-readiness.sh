@@ -10,7 +10,7 @@ fi
 
 grep -q "runs-on: \\['self-hosted', 'synology', 'shell-only', 'public'\\]" "$workflow"
 grep -q "The bootstrap docs under \`docs/bootstrap/\` are maintainer/operator notes" README.md
-grep -q "Public users do not need these steps" docs/bootstrap/onboarding.md
+grep -q "Use this checklist after the first bootstrap render" docs/bootstrap/onboarding.md
 grep -q "Decision: keep git history as-is and publish with \`.mailmap\` normalization." docs/history-privacy-decision.md
 
 git log --all --use-mailmap --format='%aN <%aE>' | sort -u >"${TMPDIR:-/tmp}/machete-mailmap-authors.$$"

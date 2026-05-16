@@ -19,9 +19,6 @@ repo:
     - .github/workflows/pr-fast-ci.yml
     - .github/workflows/extended-validation.yml
     - .github/workflows/claude.yml
-    - scripts/check-detect-secrets.sh
-    - scripts/ci/**
-    - scripts/codex-cloud/**
     - scripts/claude-cloud/**
     - scripts/claude/**
     - docs/bootstrap/**
@@ -149,7 +146,7 @@ github:
     hasWiki: false
     hasDiscussions: false
 ci:
-  runnerPolicy: public-shell-safe
+  runnerPolicy: hybrid-safe
   nodeVersion: "20"
   pythonVersion: "3.12"
   fastChecks:
@@ -179,33 +176,6 @@ release:
 agents:
   manageCodexHome: true
   codexProfile: default
-  claudeProfile: default
-  portableProfileDenylist:
-    - .env
-    - .env.*
-    - .claude/**
-    - .codex/**
-    - .machete/**
-    - .cache/**
-    - Library/Caches/**
-    - .ssh/**
-    - .gnupg/**
-    - .aws/credentials
-    - .aws/config
-    - .netrc
-    - .pypirc
-    - .npmrc
-    - .docker/config.json
-    - .config/gh/hosts.yml
-    - .kube/config
-    - "*token*"
-    - "*session*"
-    - "*cookie*"
-    - "*credential*"
-    - "*secret*"
-  enableClaudeWebEnvironment: true
-  enableClaudeDevcontainer: true
-  enableClaudeGitHubAction: true
   sharedSkills: []
 environments:
   dev:
