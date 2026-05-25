@@ -99,17 +99,18 @@ var versionCmd = &cobra.Command{
 }
 
 // stubCmd creates a no-op cobra.Command that prints a "not yet implemented"
-// message. Use this as a placeholder until full implementations are ported.
+// message and returns exit code 1. This ensures CI detects unimplemented commands
+// and prevents CI wrappers from treating stub invocations as successful operations.
 func stubCmd(name, description string) *cobra.Command {
 	return &cobra.Command{
 		Use:   name,
 		Short: description,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(),
+			_, _ = fmt.Fprintln(cmd.ErrOrStderr(),
 				fmt.Sprintf("[%s] not yet implemented (running shell backend)", name))
-			_, _ = fmt.Fprintln(cmd.OutOrStdout(),
+			_, _ = fmt.Fprintln(cmd.ErrOrStderr(),
 				"To run the shell backend: ./machete "+name)
-			return nil
-		},
+			return fmt.Errorf("[%s] not yet implemented", name)
+			},
 	}
 }
