@@ -1,143 +1,25 @@
 #!/usr/bin/env bash
+# Thin wrapper around the Go binary. Builds on first run, then execs.
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPTS_DIR="${REPO_DIR}/scripts"
-source "${SCRIPTS_DIR}/lib/profiles.sh"
+BIN="${REPO_DIR}/dist/machete"
+SRC_DIR="${REPO_DIR}/cmd/machete"
 
-usage() {
-  cat <<EOF
-machete — swiss army knife for macOS setup and maintenance
-
-Usage:
-  ./machete <command> [options]
-
-Commands:
-  setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
-  snapshot   Export current state to repo: Brewfile, global packages, services, dotfiles, defaults template
-             Use --with-extensions to also capture VS Code-compatible editor extensions
-  schedule   Install a launchd agent that runs sync and update automatically each day
-  track      Add one or more home-directory files to dotfiles/ and symlink them back into $HOME
-  untrack    Remove one or more files from dotfiles/ and replace managed home symlinks with regular files
-  uninstall  Dry-run or apply a reversible teardown of machete-managed home dotfile symlinks
-  services   Start Homebrew services listed in defaults/brew-services.txt
-  history    List rollback snapshot tags, newest first
-  rollback   Check out a snapshot tag and re-apply setup
-  update     Upgrade all Homebrew packages and clean up
-  verify     Hash tracked files and compare them to the checksum baseline
-  audit      Scan home-directory files and report new, changed, or missing files since the last snapshot baseline
-  doctor     Check what's installed, symlinked, and in sync with the repo
-  diff       Compare tracked dotfiles and Brewfile against the current machine
-  sync       Pull latest repo changes and re-apply setup (idempotent)
-  defaults   Apply macOS system preferences from defaults/macos-defaults.sh
-  defaults --init
-             Create defaults/macos-defaults.sh with an interactive preset picker
-  profile    List profiles or scaffold a new one
-
-Examples:
-  ./machete setup --profile work
-  ./machete doctor       # check current state for the active profile
-  ./machete diff         # compare live state before snapshotting
-  ./machete snapshot --profile work --with-extensions
-  ./machete snapshot     # capture what's on your Mac now
-  ./machete snapshot --with-extensions
-  ./machete schedule     # install a daily sync + update launch agent
-  ./machete track .config/ghostty/config
-  ./machete untrack .vimrc
-  ./machete uninstall --dotfiles --apply
-  ./machete services     # restore saved Homebrew services
-  ./machete history      # list rollback snapshots
-  ./machete rollback     # restore the latest snapshot
-  ./machete verify --init
-  ./machete audit        # compare current home files to the last full-home baseline
-  ./machete update       # keep packages current
-  ./machete sync         # pull + re-apply after a change
-  ./machete profile list
-  ./machete profile create work
-
-EOF
+needs_build() {
+  [[ ! -x "${BIN}" ]] && return 0
+  local newest_src
+  newest_src="$(find "${SRC_DIR}" "${REPO_DIR}/pkg" -name '*.go' -newer "${BIN}" -print -quit 2>/dev/null || true)"
+  [[ -n "${newest_src}" ]]
 }
 
-ARGS=()
-EXPLICIT_PROFILE=""
-
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --profile)
-      if [[ $# -lt 2 ]]; then
-        echo "Missing value for --profile" >&2
-        exit 1
-      fi
-      EXPLICIT_PROFILE="$2"
-      shift 2
-      ;;
-    --profile=*)
-      EXPLICIT_PROFILE="${1#--profile=}"
-      shift
-      ;;
-    *)
-      ARGS+=("$1")
-      shift
-      ;;
-  esac
-done
-
-CMD="${ARGS[0]:-}"
-if [[ "${#ARGS[@]}" -gt 0 ]]; then
-  ARGS=("${ARGS[@]:1}")
+if needs_build; then
+  if ! command -v go >/dev/null 2>&1; then
+    echo "machete: Go toolchain not found. Install Go or run 'make install' to build the binary." >&2
+    exit 1
+  fi
+  mkdir -p "${REPO_DIR}/dist"
+  go build -o "${BIN}" "${SRC_DIR}"
 fi
 
-MACHETE_PROFILE="$(resolve_profile "${REPO_DIR}" "${EXPLICIT_PROFILE}")"
-export MACHETE_PROFILE
-
-exec_script() {
-  local script="$1"
-
-  if [[ "${#ARGS[@]}" -gt 0 ]]; then
-    exec "${script}" "${ARGS[@]}"
-  fi
-
-  exec "${script}"
-}
-
-case "${CMD}" in
-  setup)    exec_script "${SCRIPTS_DIR}/setup.sh" ;;
-  snapshot) exec_script "${SCRIPTS_DIR}/snapshot.sh" ;;
-  schedule) exec_script "${SCRIPTS_DIR}/schedule.sh" ;;
-  track)    exec_script "${SCRIPTS_DIR}/track.sh" ;;
-  untrack)  exec_script "${SCRIPTS_DIR}/untrack.sh" ;;
-  uninstall) exec_script "${SCRIPTS_DIR}/uninstall.sh" ;;
-  services) exec_script "${SCRIPTS_DIR}/services.sh" ;;
-  history)  exec_script "${SCRIPTS_DIR}/history.sh" ;;
-  rollback) exec_script "${SCRIPTS_DIR}/rollback.sh" ;;
-  update)   exec_script "${SCRIPTS_DIR}/update.sh" ;;
-  verify)   exec_script "${SCRIPTS_DIR}/verify.sh" ;;
-  audit)    exec_script "${SCRIPTS_DIR}/audit.sh" ;;
-  doctor)   exec_script "${SCRIPTS_DIR}/doctor.sh" ;;
-  diff)     exec_script "${SCRIPTS_DIR}/diff.sh" ;;
-  sync)     exec_script "${SCRIPTS_DIR}/sync.sh" ;;
-  profile)  exec_script "${SCRIPTS_DIR}/profile.sh" ;;
-  defaults)
-    DEFAULTS_SCRIPT="$(profile_defaults_script_path "${REPO_DIR}" "${MACHETE_PROFILE}")"
-    if [[ "${ARGS[0]:-}" == "--init" ]]; then
-      ARGS=("${ARGS[@]:1}")
-      # shellcheck source=scripts/lib/macos-defaults.sh
-      source "${SCRIPTS_DIR}/lib/macos-defaults.sh"
-      macos_defaults_init "${DEFAULTS_SCRIPT}" "${ARGS[@]}"
-    elif [[ -x "${DEFAULTS_SCRIPT}" ]]; then
-      exec "${DEFAULTS_SCRIPT}" "${ARGS[@]}"
-    else
-      echo "No defaults script found for profile '${MACHETE_PROFILE}'. Run: ./machete defaults --init"
-      exit 1
-    fi
-    ;;
-  help|--help|-h|"")
-    usage
-    ;;
-  *)
-    echo "Unknown command: ${CMD}"
-    echo ""
-    usage
-    exit 1
-    ;;
-esac
+exec "${BIN}" "$@"

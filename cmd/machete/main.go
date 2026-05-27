@@ -340,7 +340,7 @@ func runSnapshot(cmd *cobra.Command, args []string) error {
 	fmt.Printf("        cd %s\n", repoDir)
 	fmt.Println("        git diff --stat")
 	fmt.Println("        git add .")
-	fmt.Println(`        git commit -m 'snapshot: $(date +%Y-%m-%d)' && git push`)
+	os.Stdout.WriteString("        git commit -m 'snapshot: $(date +%Y-%m-%d)' && git push\n")
 	return nil
 }
 
