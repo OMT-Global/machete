@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "${SCRIPT_DIR}/lib/bats.sh"
 
-echo "Generic archetype selected."
+echo "Running machete Go-era fast checks."
 if [[ "${MACHETE_SKIP_SHELLCHECK:-0}" != "1" ]]; then
   bash scripts/ci/run-shellcheck.sh
 fi
-bash tests/ci-bats-fallback.sh
-bash tests/validate-pr-body.sh
-run_bats_suite tests
-bash tests/homebrew-services.sh
-bash tests/global-packages.sh
-bash tests/editor-extensions.sh
-bash tests/snapshot-tags.sh
-bash tests/macos-defaults.sh
-bash tests/public-readiness.sh
+
+echo "Checking Go module metadata."
+go mod verify
+
+echo "Running Go vet."
+go vet ./...
+
+echo "Running Go tests."
+go test -v -race -count=1 ./...
+
+echo "Building machete binary."
+mkdir -p dist
+go build -o dist/machete ./cmd/machete
