@@ -86,9 +86,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
+      - name: Set up Go
+        run: bash scripts/ci/setup-go-temp.sh
 
       - name: Run fast checks
         run: bash scripts/ci/run-fast-checks.sh
@@ -102,9 +101,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
+      - name: Set up Go
+        run: bash scripts/ci/setup-go-temp.sh
 
       - name: Run extended validation
         run: bash scripts/ci/run-extended-validation.sh
