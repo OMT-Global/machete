@@ -192,18 +192,19 @@ func runSetup(cmd *cobra.Command, args []string) error {
 	fmt.Println("==> Installing Brew packages from Brewfile")
 	mergedBrewfile := filepath.Join(os.TempDir(), "machete-setup-brewfile."+strconv.Itoa(int(time.Now().UnixNano())))
 	defer os.Remove(mergedBrewfile)
-	if err := machete.BrewfileMerge(repoDir, profile, mergedBrewfile); err == nil {
-		if data, _ := os.ReadFile(mergedBrewfile); len(strings.TrimSpace(string(data))) > 0 {
-			if _, err := machete.CombinedOutput("brew", "bundle", "check", "--file="+mergedBrewfile, "--no-upgrade"); err == nil {
-				fmt.Println("    Brewfile already satisfied.")
-			} else {
-				machete.CombinedOutput("brew", "bundle", "install", "--file="+mergedBrewfile)
-			}
-		} else {
-			fmt.Printf("    No Brewfile found for profile '%s'; skipping brew bundle.\n", profile)
-		}
-	} else {
+	if err := machete.BrewfileMerge(repoDir, profile, mergedBrewfile); err != nil {
+		return fmt.Errorf("merge Brewfiles for profile %q: %w", profile, err)
+	}
+	data, err := os.ReadFile(mergedBrewfile)
+	if err != nil {
+		return fmt.Errorf("read merged Brewfile: %w", err)
+	}
+	if len(strings.TrimSpace(string(data))) == 0 {
 		fmt.Printf("    No Brewfile found for profile '%s'; skipping brew bundle.\n", profile)
+	} else if _, err := machete.CombinedOutput(brewBin, "bundle", "check", "--file="+mergedBrewfile, "--no-upgrade"); err == nil {
+		fmt.Println("    Brewfile already satisfied.")
+	} else if out, err := machete.CombinedOutput(brewBin, "bundle", "install", "--file="+mergedBrewfile); err != nil {
+		return fmt.Errorf("install Brewfile for profile %q: %w: %s", profile, err, out)
 	}
 
 	fmt.Println("==> Restoring global packages")

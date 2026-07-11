@@ -21,7 +21,7 @@ func homeDir() string {
 	if homeDirCache == "" {
 		homeDirCache = os.Getenv("HOME")
 		if homeDirCache == "" && runtime.GOOS == "darwin" {
-		 ud, err := exec.Command("dscl", ".", "read", os.Getenv("USER"), ".homeDirectory").CombinedOutput()
+			ud, err := exec.Command("dscl", ".", "read", os.Getenv("USER"), ".homeDirectory").CombinedOutput()
 			if err == nil {
 				homeDirCache = strings.TrimSpace(strings.TrimPrefix(string(ud), "homeDirectory: /Users/"))
 			}
@@ -148,7 +148,13 @@ func EditorExtensionsFile(repoDir, name string) string {
 // ProfileLayerDirs returns all profile layer directories, base first.
 func ProfileLayerDirs(repoDir, name string) []string {
 	base := BaseProfileRoot(repoDir)
-	if name == MACHETE_DEFAULT_PROFILE || name == MACHETE_BASE_PROFILE {
+	if name == MACHETE_DEFAULT_PROFILE {
+		if _, err := os.Stat(base); err == nil {
+			return []string{base, repoDir}
+		}
+		return []string{repoDir}
+	}
+	if name == MACHETE_BASE_PROFILE {
 		if _, err := os.Stat(base); err == nil {
 			return []string{base}
 		}
