@@ -1,0 +1,7 @@
+# Base operating-system packages for Ubuntu servers.
+ca-certificates
+curl
+fail2ban
+git
+ufw
+unattended-upgrades

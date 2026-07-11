@@ -64,6 +64,20 @@ func TestMiseConfigPathNamedProfileUsesProfileDirectory(t *testing.T) {
 	}
 }
 
+func TestReadPackageListSkipsCommentsAndDuplicates(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "apt.txt")
+	if err := os.WriteFile(path, []byte("# comment\ngit\n\nufw\ngit\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := ReadPackageList(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := []string{"git", "ufw"}; !sameStrings(got, want) {
+		t.Fatalf("ReadPackageList() = %v, want %v", got, want)
+	}
+}
+
 func sameStrings(got, want []string) bool {
 	if len(got) != len(want) {
 		return false

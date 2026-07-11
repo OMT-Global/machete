@@ -120,6 +120,10 @@ func PackagesDir(repoDir, name string) string {
 	return filepath.Join(ProfileRoot(repoDir, name), "packages")
 }
 
+func AptPackagesFile(repoDir, name string) string {
+	return filepath.Join(PackagesDir(repoDir, name), "apt.txt")
+}
+
 // DefaultsDir returns the defaults directory for a profile.
 func DefaultsDir(repoDir, name string) string {
 	return filepath.Join(ProfileRoot(repoDir, name), "defaults")
@@ -143,6 +147,10 @@ func DefaultsScriptPath(repoDir, name string) string {
 // BrewServicesFile returns the brew services state file path.
 func BrewServicesFile(repoDir, name string) string {
 	return filepath.Join(DefaultsDir(repoDir, name), "brew-services.txt")
+}
+
+func SystemdServicesFile(repoDir, name string) string {
+	return filepath.Join(DefaultsDir(repoDir, name), "systemd-services.txt")
 }
 
 // EditorExtensionsFile returns the VS Code extensions list path.
@@ -676,6 +684,24 @@ func BrewfileFilter(inputFile, outputFile string) error {
 		lines = append(lines, line)
 	}
 	return os.WriteFile(outputFile, []byte(strings.Join(lines, "\n")+"\n"), 0644)
+}
+
+func ReadPackageList(path string) ([]string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	seen := make(map[string]bool)
+	var entries []string
+	for _, line := range strings.Split(string(data), "\n") {
+		entry := strings.TrimSpace(line)
+		if entry == "" || strings.HasPrefix(entry, "#") || seen[entry] {
+			continue
+		}
+		seen[entry] = true
+		entries = append(entries, entry)
+	}
+	return entries, nil
 }
 
 // InstalledApplications lists app bundles from user-managed macOS application
