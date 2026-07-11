@@ -20,8 +20,6 @@ brew "cmake"
 brew "code-cli"
 # Container runtimes on MacOS (and Linux) with minimal setup
 brew "colima"
-# Secure runtime for JavaScript and TypeScript
-brew "deno"
 # Perl lib for reading and writing EXIF metadata
 brew "exiftool"
 # Modern, maintained replacement for ls
@@ -62,10 +60,10 @@ brew "kind"
 brew "kustomize"
 # Simple terminal UI for git commands
 brew "lazygit"
+# Runtime and task manager for developer tools
+brew "mise"
 # NCurses Disk Usage
 brew "ncdu"
-# Open-source, cross-platform JavaScript runtime
-brew "node"
 # Oracle Cloud Infrastructure CLI
 brew "oci-cli"
 # Your own personal AI assistant
@@ -76,16 +74,10 @@ brew "pnpm"
 brew "pipx"
 # Tool for managing OCI containers and pods
 brew "podman"
-# Interpreted, interactive, object-oriented programming language
-brew "python@3.11"
-# Interpreted, interactive, object-oriented programming language
-brew "python@3.12"
 # Search tool like grep and The Silver Searcher
 brew "ripgrep"
 # Utility that provides fast incremental file transfer
 brew "rsync"
-# Safe, fast systems programming language
-brew "rust"
 # Static analysis and lint tool for shell scripts
 brew "shellcheck"
 # Non-interactive SSH password auth
@@ -94,8 +86,6 @@ brew "sshpass"
 brew "starship"
 # Manipulate and query tags on macOS files
 brew "tag"
-# Tool to build, change, and version infrastructure
-brew "terraform"
 # OCR (Optical Character Recognition) engine
 brew "tesseract"
 # Terraform version manager inspired by rbenv

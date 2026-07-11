@@ -21,7 +21,7 @@ func homeDir() string {
 	if homeDirCache == "" {
 		homeDirCache = os.Getenv("HOME")
 		if homeDirCache == "" && runtime.GOOS == "darwin" {
-		 ud, err := exec.Command("dscl", ".", "read", os.Getenv("USER"), ".homeDirectory").CombinedOutput()
+			ud, err := exec.Command("dscl", ".", "read", os.Getenv("USER"), ".homeDirectory").CombinedOutput()
 			if err == nil {
 				homeDirCache = strings.TrimSpace(strings.TrimPrefix(string(ud), "homeDirectory: /Users/"))
 			}
@@ -130,6 +130,11 @@ func BrewfilePath(repoDir, name string) string {
 	return filepath.Join(ProfileRoot(repoDir, name), "Brewfile")
 }
 
+// MiseConfigPath returns the Mise tool manifest path for a profile.
+func MiseConfigPath(repoDir, name string) string {
+	return filepath.Join(ProfileRoot(repoDir, name), "mise.toml")
+}
+
 // DefaultsScriptPath returns the macOS defaults script path.
 func DefaultsScriptPath(repoDir, name string) string {
 	return filepath.Join(DefaultsDir(repoDir, name), "macos-defaults.sh")
@@ -148,7 +153,13 @@ func EditorExtensionsFile(repoDir, name string) string {
 // ProfileLayerDirs returns all profile layer directories, base first.
 func ProfileLayerDirs(repoDir, name string) []string {
 	base := BaseProfileRoot(repoDir)
-	if name == MACHETE_DEFAULT_PROFILE || name == MACHETE_BASE_PROFILE {
+	if name == MACHETE_DEFAULT_PROFILE {
+		if _, err := os.Stat(base); err == nil {
+			return []string{base, repoDir}
+		}
+		return []string{repoDir}
+	}
+	if name == MACHETE_BASE_PROFILE {
 		if _, err := os.Stat(base); err == nil {
 			return []string{base}
 		}
@@ -665,6 +676,57 @@ func BrewfileFilter(inputFile, outputFile string) error {
 		lines = append(lines, line)
 	}
 	return os.WriteFile(outputFile, []byte(strings.Join(lines, "\n")+"\n"), 0644)
+}
+
+// InstalledApplications lists app bundles from user-managed macOS application
+// directories. System applications are intentionally excluded.
+func InstalledApplications(home string) ([]string, error) {
+	paths := []string{"/Applications", filepath.Join(home, "Applications")}
+	seen := make(map[string]bool)
+	var apps []string
+	for _, dir := range paths {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+		for _, entry := range entries {
+			if entry.IsDir() && strings.HasSuffix(entry.Name(), ".app") && !seen[entry.Name()] {
+				seen[entry.Name()] = true
+				apps = append(apps, entry.Name())
+			}
+		}
+	}
+	sort.Strings(apps)
+	return apps, nil
+}
+
+// UnmanagedApplications returns app bundles that cannot be matched to a
+// Homebrew cask token by normalized name. Results require human review.
+func UnmanagedApplications(apps, casks []string) []string {
+	managed := make(map[string]bool, len(casks))
+	for _, cask := range casks {
+		managed[normalizePackageName(cask)] = true
+	}
+	var unmanaged []string
+	for _, app := range apps {
+		if !managed[normalizePackageName(strings.TrimSuffix(app, ".app"))] {
+			unmanaged = append(unmanaged, app)
+		}
+	}
+	return unmanaged
+}
+
+func normalizePackageName(name string) string {
+	var normalized strings.Builder
+	for _, r := range strings.ToLower(name) {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+			normalized.WriteRune(r)
+		}
+	}
+	return normalized.String()
 }
 
 // RenderDefaultsScript renders a macOS defaults script from a preset.

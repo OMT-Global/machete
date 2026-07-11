@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/OMT-Global/machete/v2/pkg/machete"
+	"github.com/spf13/cobra"
 )
 
 var profileFlag string
@@ -79,12 +79,12 @@ Usage:
 		RunE:  runUninstall,
 	})
 	rootCmd.AddCommand(&cobra.Command{
-		Use:  "services",
+		Use:   "services",
 		Short: "Start Homebrew services from saved state",
 		RunE:  runServices,
 	})
 	rootCmd.AddCommand(&cobra.Command{
-		Use:  "history",
+		Use:   "history",
 		Short: "List rollback snapshot tags",
 		RunE:  runHistory,
 	})
@@ -133,6 +133,11 @@ Usage:
 		Use:   "audit [flags]",
 		Short: "Scan home directory for drift",
 		RunE:  runAudit,
+	})
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "inventory",
+		Short: "List managed tools and application adoption candidates",
+		RunE:  runInventory,
 	})
 
 	if err := rootCmd.Execute(); err != nil {
@@ -192,18 +197,19 @@ func runSetup(cmd *cobra.Command, args []string) error {
 	fmt.Println("==> Installing Brew packages from Brewfile")
 	mergedBrewfile := filepath.Join(os.TempDir(), "machete-setup-brewfile."+strconv.Itoa(int(time.Now().UnixNano())))
 	defer os.Remove(mergedBrewfile)
-	if err := machete.BrewfileMerge(repoDir, profile, mergedBrewfile); err == nil {
-		if data, _ := os.ReadFile(mergedBrewfile); len(strings.TrimSpace(string(data))) > 0 {
-			if _, err := machete.CombinedOutput("brew", "bundle", "check", "--file="+mergedBrewfile, "--no-upgrade"); err == nil {
-				fmt.Println("    Brewfile already satisfied.")
-			} else {
-				machete.CombinedOutput("brew", "bundle", "install", "--file="+mergedBrewfile)
-			}
-		} else {
-			fmt.Printf("    No Brewfile found for profile '%s'; skipping brew bundle.\n", profile)
-		}
-	} else {
+	if err := machete.BrewfileMerge(repoDir, profile, mergedBrewfile); err != nil {
+		return fmt.Errorf("merge Brewfiles for profile %q: %w", profile, err)
+	}
+	data, err := os.ReadFile(mergedBrewfile)
+	if err != nil {
+		return fmt.Errorf("read merged Brewfile: %w", err)
+	}
+	if len(strings.TrimSpace(string(data))) == 0 {
 		fmt.Printf("    No Brewfile found for profile '%s'; skipping brew bundle.\n", profile)
+	} else if _, err := machete.CombinedOutput(brewBin, "bundle", "check", "--file="+mergedBrewfile, "--no-upgrade"); err == nil {
+		fmt.Println("    Brewfile already satisfied.")
+	} else if out, err := machete.CombinedOutput(brewBin, "bundle", "install", "--file="+mergedBrewfile); err != nil {
+		return fmt.Errorf("install Brewfile for profile %q: %w: %s", profile, err, out)
 	}
 
 	fmt.Println("==> Restoring global packages")
@@ -211,6 +217,10 @@ func runSetup(cmd *cobra.Command, args []string) error {
 		fmt.Printf("     - npm globals: %s\n", filepath.Join(machete.PackagesDir(repoDir, profile), "npm-global.txt"))
 		fmt.Printf("     - pip globals: %s\n", filepath.Join(machete.PackagesDir(repoDir, profile), "pip-global.txt"))
 		fmt.Printf("     - cargo globals: %s\n", filepath.Join(machete.PackagesDir(repoDir, profile), "cargo-global.txt"))
+	}
+
+	if err := runMiseSetup(repoDir, profile); err != nil {
+		return err
 	}
 
 	fmt.Println("==> Symlinking dotfiles")
@@ -243,6 +253,25 @@ func runSetup(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("")
 	fmt.Println("    ==> Setup complete. Open a new terminal to pick up your shell config.")
+	return nil
+}
+
+func runMiseSetup(repoDir, profile string) error {
+	configPath := machete.MiseConfigPath(repoDir, profile)
+	if !machete.FileExists(configPath) {
+		fmt.Printf("==> Mise tools\n    No mise.toml found for profile '%s'; skipping.\n", profile)
+		return nil
+	}
+
+	miseBin := machete.HasCommand("mise")
+	if miseBin == "" {
+		return fmt.Errorf("mise is required by %s but was not installed by Homebrew", configPath)
+	}
+
+	fmt.Println("==> Installing Mise tools")
+	if err := machete.ExecCmd(miseBin, "install", "--yes", "--cd", filepath.Dir(configPath)); err != nil {
+		return fmt.Errorf("install Mise tools for profile %q: %w", profile, err)
+	}
 	return nil
 }
 
@@ -882,5 +911,43 @@ func runAudit(cmd *cobra.Command, args []string) error {
 	fmt.Println("==> Running audit")
 	fmt.Println("    No audit baseline found.")
 	fmt.Println("    Run: ./machete audit --init")
+	return nil
+}
+
+func runInventory(cmd *cobra.Command, args []string) error {
+	fmt.Println("==> Mise")
+	if miseBin := machete.HasCommand("mise"); miseBin != "" {
+		fmt.Printf("     [ok] mise found at %s\n", miseBin)
+	} else {
+		fmt.Println("     [!] Mise is not installed")
+	}
+
+	fmt.Println("\n==> Homebrew casks")
+	var casks []string
+	if brewBin := machete.HasCommand("brew"); brewBin != "" {
+		out, err := machete.CombinedOutput(brewBin, "list", "--cask")
+		if err != nil {
+			return fmt.Errorf("list Homebrew casks: %w", err)
+		}
+		casks = strings.Fields(out)
+		fmt.Printf("     [ok] %d cask(s) installed\n", len(casks))
+	} else {
+		fmt.Println("     [!] Homebrew is not installed")
+	}
+
+	apps, err := machete.InstalledApplications(os.Getenv("HOME"))
+	if err != nil {
+		return fmt.Errorf("inventory applications: %w", err)
+	}
+	candidates := machete.UnmanagedApplications(apps, casks)
+	fmt.Println("\n==> Application adoption candidates")
+	if len(candidates) == 0 {
+		fmt.Println("     [ok] No unmatched application bundles found")
+		return nil
+	}
+	for _, app := range candidates {
+		fmt.Printf("     [!] %s\n", app)
+	}
+	fmt.Println("\nReview each candidate before adding a Homebrew cask. Name matching is conservative and does not prove how an app was installed.")
 	return nil
 }
