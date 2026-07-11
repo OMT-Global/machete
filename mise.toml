@@ -1,0 +1,10 @@
+[tools]
+bitwarden = "latest"
+# Cross-platform developer runtimes. Keep desktop applications and OS packages
+# in the platform package manager (Homebrew on macOS, apt on Ubuntu).
+deno = "latest"
+go = "1.21.13"
+node = "24"
+python = "3.12"
+rust = "stable"
+terraform = "latest"

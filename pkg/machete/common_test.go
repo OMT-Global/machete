@@ -42,6 +42,21 @@ func TestBrewfileMergeDefaultProfileIncludesRootBrewfile(t *testing.T) {
 	}
 }
 
+func TestMiseConfigPathDefaultProfileUsesRepository(t *testing.T) {
+	repoDir := t.TempDir()
+	if got, want := MiseConfigPath(repoDir, MACHETE_DEFAULT_PROFILE), filepath.Join(repoDir, "mise.toml"); got != want {
+		t.Fatalf("MiseConfigPath(default) = %q, want %q", got, want)
+	}
+}
+
+func TestUnmanagedApplicationsMatchesNormalizedCaskNames(t *testing.T) {
+	apps := []string{"Google Chrome.app", "Machete.app", "Visual Studio Code.app"}
+	casks := []string{"google-chrome", "visual-studio-code"}
+	if got, want := UnmanagedApplications(apps, casks), []string{"Machete.app"}; !sameStrings(got, want) {
+		t.Fatalf("UnmanagedApplications() = %v, want %v", got, want)
+	}
+}
+
 func sameStrings(got, want []string) bool {
 	if len(got) != len(want) {
 		return false

@@ -26,7 +26,7 @@ files into `$HOME`, apply macOS defaults, start Homebrew services, and
 rewrite tracked snapshots from the current machine state. Read what each
 command does before pointing it at a machine you care about.
 
-- `./machete setup` installs or restores Homebrew packages, global packages, services, dotfile symlinks, and macOS defaults. Existing home files are backed up with timestamped names before symlinks are created.
+- `./machete setup` installs or restores Homebrew packages, Mise developer tools, global packages, services, dotfile symlinks, and macOS defaults. Existing home files are backed up with timestamped names before symlinks are created.
 - `./machete sync` pulls the latest repo changes and re-runs setup for the active profile.
 - `./machete snapshot` copies selected live machine state into this repository. Review `git diff` before committing so private paths, identities, or secrets do not become portable profile data.
 - `./machete defaults` applies the shell commands in `defaults/macos-defaults.sh` to the current macOS user.
@@ -60,6 +60,7 @@ on first use and re-execs it for you, so you can just go.
 ./machete uninstall  Dry-run or apply a reversible teardown of machete-managed home dotfile symlinks
 ./machete services   Start Homebrew services listed in defaults/brew-services.txt
 ./machete history    List rollback snapshot tags, newest first
+./machete inventory  Report installed package managers and app-adoption guidance
 ./machete rollback   Restore the latest snapshot tag and re-apply setup
 ./machete verify     Hash tracked files and compare them to the checksum baseline
 ./machete audit      Scan $HOME and report new, changed, or missing files since the last snapshot baseline
@@ -83,6 +84,7 @@ Current Mac                   Git Repository              New Mac
 │  - brew bundle dump  │      │ packages/        │      │  - Xcode CLI tools   │
 │  - global pkg lists  │      │ dotfiles/        │      │  - Homebrew          │
 │  - copy dotfiles     │      │ defaults/        │      │  - brew bundle       │
+│                      │      │ mise.toml        │      │  - mise install      │
 │  - brew services     │      │   brew-services  │      │  - global pkg restore│
 │  - defaults template │      │   macos-defaults │      │  - brew services     │
 │                      │      │                  │      │  - symlink dotfiles  │
@@ -183,7 +185,8 @@ machete/
   pkg/                     # Go packages: brewfile, dotfiles, profiles, snapshot, ...
   Makefile                 # build, install, test, clean
   go.mod, go.sum           # Go module definition
-  Brewfile                 # default-profile Homebrew packages
+  Brewfile                 # default-profile Homebrew packages and desktop apps
+  mise.toml                # default-profile developer runtimes
   packages/                # default-profile global package snapshots
     npm-global.txt
     pip-global.txt
@@ -231,6 +234,18 @@ mkdir -p profiles/base
 ```
 
 ## 📦 Global Packages
+
+## 🧰 Mise developer tools
+
+`mise.toml` is the portable source of truth for developer runtimes such as Go,
+Node, Python, Rust, Terraform, and Deno. `./machete setup` installs Mise through
+Homebrew and then runs `mise install` against the active profile's manifest.
+Mise is activated for zsh through the managed `.zshrc`.
+
+Keep desktop applications and OS-level packages in the platform package manager:
+Homebrew casks on macOS and `apt` on Ubuntu. `./machete inventory` reports the
+installed package-manager state and provides the safe adoption workflow; add a
+desktop application to the Brewfile only after confirming its cask.
 
 `./machete snapshot` records user/global packages for:
 - `npm -g` → `packages/npm-global.txt`
