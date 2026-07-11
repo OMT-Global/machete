@@ -46,10 +46,17 @@ Usage:
 	}
 	rootCmd.PersistentFlags().StringVar(&profileFlag, "profile", "", "profile name")
 
-	rootCmd.AddCommand(&cobra.Command{
+	setupCmd := &cobra.Command{
 		Use:   "setup [flags]",
 		Short: "Bootstrap a new Mac",
 		RunE:  runSetup,
+	}
+	setupCmd.Flags().BoolVar(&setupYes, "yes", false, "apply the setup plan without prompting")
+	rootCmd.AddCommand(setupCmd)
+	rootCmd.AddCommand(&cobra.Command{
+		Use:   "plan",
+		Short: "Show the setup plan without changing the machine",
+		RunE:  runPlan,
 	})
 	rootCmd.AddCommand(&cobra.Command{
 		Use:   "snapshot [flags]",
@@ -148,8 +155,12 @@ Usage:
 // --- setup ---
 
 var homebrewShellEnv bool
+var setupYes bool
 
 func runSetup(cmd *cobra.Command, args []string) error {
+	if !setupYes {
+		return fmt.Errorf("setup changes this machine; run './machete plan' first, then './machete setup --yes'")
+	}
 	repoDir := projectDir()
 	profile, err := resolveProfile()
 	if err != nil {
@@ -253,6 +264,53 @@ func runSetup(cmd *cobra.Command, args []string) error {
 
 	fmt.Println("")
 	fmt.Println("    ==> Setup complete. Open a new terminal to pick up your shell config.")
+	return nil
+}
+
+func runPlan(cmd *cobra.Command, args []string) error {
+	repoDir := projectDir()
+	profile, err := resolveProfile()
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("==> Setup plan for profile %q\n", profile)
+	if out, err := machete.CombinedOutput("xcode-select", "-p"); err == nil && strings.TrimSpace(out) != "" {
+		fmt.Println("     [ok] Xcode Command Line Tools are installed")
+	} else {
+		fmt.Println("     [will] Request Xcode Command Line Tools installation")
+	}
+
+	if brewBin, err := machete.FindBrewBin(); err == nil {
+		fmt.Printf("     [ok] Homebrew found at %s\n", brewBin)
+	} else {
+		fmt.Println("     [will] Install Homebrew")
+	}
+
+	if brewfile := machete.BrewfilePath(repoDir, profile); machete.FileExists(brewfile) {
+		fmt.Printf("     [will] Reconcile Homebrew packages from %s\n", brewfile)
+	} else {
+		fmt.Println("     [-] No Brewfile to reconcile")
+	}
+
+	if miseConfig := machete.MiseConfigPath(repoDir, profile); machete.FileExists(miseConfig) {
+		fmt.Printf("     [will] Install developer tools from %s\n", miseConfig)
+	} else {
+		fmt.Println("     [-] No Mise manifest to reconcile")
+	}
+
+	dotfilesDir := machete.DotfilesDir(repoDir, profile)
+	if dotfiles, err := machete.DotfilesList(dotfilesDir); err == nil {
+		fmt.Printf("     [will] Link %d managed dotfile(s)\n", len(dotfiles))
+	}
+	if machete.FileExists(machete.BrewServicesFile(repoDir, profile)) {
+		fmt.Println("     [will] Restore saved Homebrew services")
+	}
+	if machete.FileExists(machete.DefaultsScriptPath(repoDir, profile)) {
+		fmt.Println("     [will] Apply managed macOS defaults")
+	}
+
+	fmt.Println("\nNo changes were made. Run './machete setup --yes' to apply this plan.")
 	return nil
 }
 
@@ -649,7 +707,9 @@ func runRollback(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("==> Re-applying setup")
-	machete.ExecCmd("machete", "setup")
+	if err := machete.ExecCmd("machete", "setup", "--yes"); err != nil {
+		return err
+	}
 
 	fmt.Println("")
 	fmt.Printf("==> Rollback complete. Current state is detached at %s.\n", targetTag)
@@ -817,8 +877,7 @@ func runSync(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Println("==> Re-applying setup")
-	machete.ExecCmd("machete", "setup")
-	return nil
+	return machete.ExecCmd("machete", "setup", "--yes")
 }
 
 // --- profile ---

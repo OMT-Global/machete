@@ -52,7 +52,8 @@ on first use and re-execs it for you, so you can just go.
 ## 🗺️ Commands
 
 ```
-./machete setup      Bootstrap a new Mac: Xcode tools, Homebrew, global packages, services, dotfiles, defaults
+./machete plan       Show the setup plan without changing the machine
+./machete setup --yes Apply the reviewed setup plan
 ./machete snapshot   Export current state to the active profile or --profile target
 ./machete schedule   Install a daily launchd agent that runs sync + update automatically
 ./machete track      Add one or more home-directory files to dotfiles/ and symlink them back into $HOME
@@ -80,7 +81,7 @@ on first use and re-execs it for you, so you can just go.
 ```
 Current Mac                   Git Repository              New Mac
 ┌──────────────────────┐      ┌──────────────────┐      ┌──────────────────────┐
-│ ./machete snapshot   │ ───► │ Brewfile         │ ───► │ ./machete setup      │
+│ ./machete snapshot   │ ───► │ Brewfile         │ ───► │ ./machete setup --yes│
 │  - brew bundle dump  │      │ packages/        │      │  - Xcode CLI tools   │
 │  - global pkg lists  │      │ dotfiles/        │      │  - Homebrew          │
 │  - copy dotfiles     │      │ defaults/        │      │  - brew bundle       │
@@ -127,7 +128,8 @@ sideways, `./machete rollback` puts you back where you were.
 ```bash
 git clone https://github.com/OMT-Global/machete.git
 cd machete
-./machete setup
+./machete plan
+./machete setup --yes
 ```
 
 Go make coffee. ☕ Come back to a fully provisioned machine.

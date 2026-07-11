@@ -57,6 +57,13 @@ func TestUnmanagedApplicationsMatchesNormalizedCaskNames(t *testing.T) {
 	}
 }
 
+func TestMiseConfigPathNamedProfileUsesProfileDirectory(t *testing.T) {
+	repoDir := t.TempDir()
+	if got, want := MiseConfigPath(repoDir, "ubuntu"), filepath.Join(repoDir, "profiles", "ubuntu", "mise.toml"); got != want {
+		t.Fatalf("MiseConfigPath(ubuntu) = %q, want %q", got, want)
+	}
+}
+
 func sameStrings(got, want []string) bool {
 	if len(got) != len(want) {
 		return false
