@@ -253,7 +253,9 @@ desktop application to the Brewfile only after confirming its cask.
 
 The `ubuntu` profile uses `profiles/ubuntu/packages/apt.txt` for operating-system
 packages, `profiles/ubuntu/defaults/systemd-services.txt` for enabled services,
-and `profiles/ubuntu/mise.toml` for developer tools. On Ubuntu, review with
+and `profiles/ubuntu/mise.toml` for developer tools. On a fresh Ubuntu host,
+Machete installs the apt baseline first, then bootstraps Mise at
+`/usr/local/bin/mise` before applying the developer-tool manifest. On Ubuntu, review with
 `./machete --profile ubuntu plan`, then apply as root with
 `./machete --profile ubuntu setup --yes`.
 

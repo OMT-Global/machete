@@ -301,6 +301,9 @@ func runPlan(cmd *cobra.Command, args []string) error {
 	}
 
 	if miseConfig := machete.MiseConfigPath(repoDir, profile); machete.FileExists(miseConfig) {
+		if machete.HasCommand("mise") == "" {
+			fmt.Println("     [will] Bootstrap Mise at /usr/local/bin/mise")
+		}
 		fmt.Printf("     [will] Install developer tools from %s\n", miseConfig)
 	} else {
 		fmt.Println("     [-] No Mise manifest to reconcile")
@@ -392,7 +395,14 @@ func runMiseSetup(repoDir, profile string) error {
 
 	miseBin := machete.HasCommand("mise")
 	if miseBin == "" {
-		return fmt.Errorf("mise is required by %s but was not installed by Homebrew", configPath)
+		if runtime.GOOS != "linux" {
+			return fmt.Errorf("mise is required by %s but was not installed by Homebrew", configPath)
+		}
+		var err error
+		miseBin, err = bootstrapLinuxMise()
+		if err != nil {
+			return fmt.Errorf("bootstrap mise required by %s: %w", configPath, err)
+		}
 	}
 
 	fmt.Println("==> Installing Mise tools")
@@ -400,6 +410,45 @@ func runMiseSetup(repoDir, profile string) error {
 		return fmt.Errorf("install Mise tools for profile %q: %w", profile, err)
 	}
 	return nil
+}
+
+const linuxMiseInstallPath = "/usr/local/bin/mise"
+
+func bootstrapLinuxMise() (string, error) {
+	if _, err := os.Stat(linuxMiseInstallPath); err == nil {
+		return linuxMiseInstallPath, nil
+	}
+
+	installer, err := os.CreateTemp("", "machete-mise-install-*")
+	if err != nil {
+		return "", err
+	}
+	installerPath := installer.Name()
+	if err := installer.Close(); err != nil {
+		return "", err
+	}
+	defer os.Remove(installerPath)
+
+	fmt.Printf("==> Bootstrapping Mise at %s\n", linuxMiseInstallPath)
+	if err := machete.ExecCmd("curl", "-fsSL", "https://mise.run", "-o", installerPath); err != nil {
+		return "", fmt.Errorf("download mise installer: %w", err)
+	}
+	cmd := linuxMiseInstallCommand(installerPath, linuxMiseInstallPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	if _, err := os.Stat(linuxMiseInstallPath); err != nil {
+		return "", fmt.Errorf("mise installer completed without creating %s: %w", linuxMiseInstallPath, err)
+	}
+	return linuxMiseInstallPath, nil
+}
+
+func linuxMiseInstallCommand(installerPath, installPath string) *exec.Cmd {
+	cmd := exec.Command("sh", installerPath)
+	cmd.Env = append(os.Environ(), "MISE_INSTALL_PATH="+installPath)
+	return cmd
 }
 
 // --- snapshot ---
