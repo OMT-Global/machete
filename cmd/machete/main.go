@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -166,6 +167,9 @@ func runSetup(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	if runtime.GOOS == "linux" {
+		return runLinuxSetup(repoDir, profile)
+	}
 
 	fmt.Println("==> Creating rollback snapshot")
 	if tag, err := machete.CreateSnapshotTag(repoDir, "setup"); err == nil && tag != "" {
@@ -275,6 +279,9 @@ func runPlan(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Printf("==> Setup plan for profile %q\n", profile)
+	if runtime.GOOS == "linux" {
+		return runLinuxPlan(repoDir, profile)
+	}
 	if out, err := machete.CombinedOutput("xcode-select", "-p"); err == nil && strings.TrimSpace(out) != "" {
 		fmt.Println("     [ok] Xcode Command Line Tools are installed")
 	} else {
@@ -294,6 +301,9 @@ func runPlan(cmd *cobra.Command, args []string) error {
 	}
 
 	if miseConfig := machete.MiseConfigPath(repoDir, profile); machete.FileExists(miseConfig) {
+		if machete.HasCommand("mise") == "" {
+			fmt.Println("     [will] Bootstrap Mise at /usr/local/bin/mise")
+		}
 		fmt.Printf("     [will] Install developer tools from %s\n", miseConfig)
 	} else {
 		fmt.Println("     [-] No Mise manifest to reconcile")
@@ -314,6 +324,68 @@ func runPlan(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func runLinuxPlan(repoDir, profile string) error {
+	if machete.HasCommand("apt-get") != "" {
+		fmt.Println("     [ok] apt-get is available")
+	} else {
+		fmt.Println("     [!] apt-get is required")
+	}
+	if packages := machete.AptPackagesFile(repoDir, profile); machete.FileExists(packages) {
+		entries, _ := machete.ReadPackageList(packages)
+		fmt.Printf("     [will] Reconcile %d apt package(s) from %s\n", len(entries), packages)
+	}
+	if miseConfig := machete.MiseConfigPath(repoDir, profile); machete.FileExists(miseConfig) {
+		fmt.Printf("     [will] Install developer tools from %s\n", miseConfig)
+	}
+	if services := machete.SystemdServicesFile(repoDir, profile); machete.FileExists(services) {
+		entries, _ := machete.ReadPackageList(services)
+		fmt.Printf("     [will] Enable %d systemd service(s)\n", len(entries))
+	}
+	fmt.Println("\nNo changes were made. Run './machete setup --yes' as root to apply this plan.")
+	return nil
+}
+
+func runLinuxSetup(repoDir, profile string) error {
+	if os.Geteuid() != 0 {
+		return fmt.Errorf("Ubuntu setup must run as root")
+	}
+	if machete.HasCommand("apt-get") == "" {
+		return fmt.Errorf("apt-get is required for Ubuntu setup")
+	}
+	packagesPath := machete.AptPackagesFile(repoDir, profile)
+	if machete.FileExists(packagesPath) {
+		packages, err := machete.ReadPackageList(packagesPath)
+		if err != nil {
+			return err
+		}
+		if len(packages) > 0 {
+			if err := machete.ExecCmd("apt-get", "update"); err != nil {
+				return err
+			}
+			if err := machete.ExecCmd("apt-get", append([]string{"install", "--yes"}, packages...)...); err != nil {
+				return err
+			}
+		}
+	}
+	if err := runMiseSetup(repoDir, profile); err != nil {
+		return err
+	}
+	servicesPath := machete.SystemdServicesFile(repoDir, profile)
+	if machete.FileExists(servicesPath) {
+		services, err := machete.ReadPackageList(servicesPath)
+		if err != nil {
+			return err
+		}
+		for _, service := range services {
+			if err := machete.ExecCmd("systemctl", "enable", "--now", service); err != nil {
+				return err
+			}
+		}
+	}
+	fmt.Println("\n    ==> Ubuntu setup complete.")
+	return nil
+}
+
 func runMiseSetup(repoDir, profile string) error {
 	configPath := machete.MiseConfigPath(repoDir, profile)
 	if !machete.FileExists(configPath) {
@@ -323,7 +395,14 @@ func runMiseSetup(repoDir, profile string) error {
 
 	miseBin := machete.HasCommand("mise")
 	if miseBin == "" {
-		return fmt.Errorf("mise is required by %s but was not installed by Homebrew", configPath)
+		if runtime.GOOS != "linux" {
+			return fmt.Errorf("mise is required by %s but was not installed by Homebrew", configPath)
+		}
+		var err error
+		miseBin, err = bootstrapLinuxMise()
+		if err != nil {
+			return fmt.Errorf("bootstrap mise required by %s: %w", configPath, err)
+		}
 	}
 
 	fmt.Println("==> Installing Mise tools")
@@ -331,6 +410,45 @@ func runMiseSetup(repoDir, profile string) error {
 		return fmt.Errorf("install Mise tools for profile %q: %w", profile, err)
 	}
 	return nil
+}
+
+const linuxMiseInstallPath = "/usr/local/bin/mise"
+
+func bootstrapLinuxMise() (string, error) {
+	if _, err := os.Stat(linuxMiseInstallPath); err == nil {
+		return linuxMiseInstallPath, nil
+	}
+
+	installer, err := os.CreateTemp("", "machete-mise-install-*")
+	if err != nil {
+		return "", err
+	}
+	installerPath := installer.Name()
+	if err := installer.Close(); err != nil {
+		return "", err
+	}
+	defer os.Remove(installerPath)
+
+	fmt.Printf("==> Bootstrapping Mise at %s\n", linuxMiseInstallPath)
+	if err := machete.ExecCmd("curl", "-fsSL", "https://mise.run", "-o", installerPath); err != nil {
+		return "", fmt.Errorf("download mise installer: %w", err)
+	}
+	cmd := linuxMiseInstallCommand(installerPath, linuxMiseInstallPath)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return "", err
+	}
+	if _, err := os.Stat(linuxMiseInstallPath); err != nil {
+		return "", fmt.Errorf("mise installer completed without creating %s: %w", linuxMiseInstallPath, err)
+	}
+	return linuxMiseInstallPath, nil
+}
+
+func linuxMiseInstallCommand(installerPath, installPath string) *exec.Cmd {
+	cmd := exec.Command("sh", installerPath)
+	cmd.Env = append(os.Environ(), "MISE_INSTALL_PATH="+installPath)
+	return cmd
 }
 
 // --- snapshot ---

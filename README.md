@@ -249,6 +249,20 @@ Homebrew casks on macOS and `apt` on Ubuntu. `./machete inventory` reports the
 installed package-manager state and provides the safe adoption workflow; add a
 desktop application to the Brewfile only after confirming its cask.
 
+## Ubuntu and Hetzner
+
+The `ubuntu` profile uses `profiles/ubuntu/packages/apt.txt` for operating-system
+packages, `profiles/ubuntu/defaults/systemd-services.txt` for enabled services,
+and `profiles/ubuntu/mise.toml` for developer tools. On a fresh Ubuntu host,
+Machete installs the apt baseline first, then bootstraps Mise at
+`/usr/local/bin/mise` before applying the developer-tool manifest. On Ubuntu, review with
+`./machete --profile ubuntu plan`, then apply as root with
+`./machete --profile ubuntu setup --yes`.
+
+Use `examples/hetzner/ubuntu-cloud-init.yaml` as a generic first-boot baseline
+when creating a Hetzner Ubuntu server. It hardens SSH, enables UFW and baseline
+services, and deliberately contains no account-specific keys, tokens, or apps.
+
 `./machete snapshot` records user/global packages for:
 - `npm -g` → `packages/npm-global.txt`
 - `pip install --user` → `packages/pip-global.txt`

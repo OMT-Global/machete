@@ -1,0 +1,23 @@
+#cloud-config
+# Generic first-boot baseline. Add SSH keys through the Hetzner project.
+package_update: true
+package_upgrade: false
+packages:
+  - ca-certificates
+  - curl
+  - fail2ban
+  - git
+  - ufw
+  - unattended-upgrades
+write_files:
+  - path: /etc/ssh/sshd_config.d/99-machete-hardening.conf
+    permissions: "0644"
+    content: |
+      PasswordAuthentication no
+      PermitRootLogin prohibit-password
+runcmd:
+  - systemctl restart ssh
+  - ufw allow OpenSSH
+  - ufw --force enable
+  - systemctl enable --now fail2ban
+  - systemctl enable --now unattended-upgrades
