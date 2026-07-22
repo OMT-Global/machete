@@ -1,9 +1,6 @@
 name: PR Fast CI
 
 on:
-  push:
-    branches:
-      - codex/ubuntu-cloud-init
   pull_request:
     types: [opened, edited, synchronize, reopened, ready_for_review]
 
@@ -13,7 +10,7 @@ concurrency:
 
 permissions:
   contents: read
-  pull_requests: read
+  pull-requests: read
 
 env:
   NODE_VERSION: '20'
