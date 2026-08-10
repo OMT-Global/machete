@@ -146,6 +146,8 @@ github:
     hasWiki: false
     hasDiscussions: false
 ci:
+  codeqlLanguages:
+    - go
   runnerPolicy: hybrid-safe
   nodeVersion: "20"
   pythonVersion: "3.12"
