@@ -27,8 +27,8 @@ Use this checklist after the first bootstrap render or whenever `project.bootstr
 
 ## Runner Policy
 
-- Shell-safe jobs may use `[self-hosted, synology, shell-only, public]`.
-- Docker, service-container, browser, and `container:` workloads stay on GitHub-hosted runners.
+- Ordinary shell-safe public jobs use standard free `ubuntu-24.04` GitHub-hosted runners.
+- Docker, service-container, browser, and `container:` workloads require an explicitly reviewed specialized runner class with matching capabilities. Do not create or select that class as part of ordinary public CI.
 - Keep PR checks cheap. Add heavy validation to `scripts/ci/run-extended-validation.sh` instead of the PR lane.
 
 - Consume shared security, release, and AI attestation workflows from the control-plane repo once those contracts are pinned for production use.

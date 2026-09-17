@@ -23,6 +23,6 @@ Read-only inspection starts with:
 
 ## CI And Runner Decision
 
-Required PR validation runs on a public-eligible shell-only self-hosted runner lane, so `CI Gate` remains available after the repository becomes public.
+Required PR validation runs on standard free `ubuntu-24.04` GitHub-hosted runners, so `CI Gate` remains available after the repository becomes public.
 
-The required PR lane stays shell-only and does not use Docker, service containers, browser infrastructure, or workflow `container:` blocks. Keep higher-risk work in trusted extended validation, nightly work, or manual maintainer workflows.
+The required PR lane stays shell-only and does not use Docker, service containers, browser infrastructure, or workflow `container:` blocks. Higher-risk workloads require an explicitly reviewed specialized runner class; keep heavier validation in extended validation, nightly work, or manual maintainer workflows.

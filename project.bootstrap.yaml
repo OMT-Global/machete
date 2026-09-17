@@ -148,7 +148,7 @@ github:
 ci:
   codeqlLanguages:
     - go
-  runnerPolicy: hybrid-safe
+  runnerPolicy: github-hosted-public
   nodeVersion: "20"
   pythonVersion: "3.12"
   fastChecks:
